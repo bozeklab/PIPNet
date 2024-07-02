@@ -29,7 +29,7 @@ def get_data(args: argparse.Namespace):
     if args.dataset == 'grayscale_example':
         return get_grayscale(True, './data/train', './data/train', './data/test', args.image_size, args.seed, args.validation_size)
     if args.dataset == 'grayscale_mito':
-        return get_grayscale(True, './mito_scale_resized_512_split/train', '/data/pwojcik/mito_scale_resized_512_split/train',
+        return get_grayscale(True, '/data/pwojcik/mito_scale_resized_512_split/train', '/data/pwojcik/mito_scale_resized_512_split/train',
                              '/data/pwojcik/mito_scale_resized_512_split/test', args.image_size, args.seed,
                              args.validation_size)
     raise Exception(f'Could not load data set, data set "{args.dataset}" not found!')
