@@ -60,7 +60,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
             shutil.copy(img, dir)
         
         with torch.no_grad():
-            softmaxes, pooled, out = net(xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
+            softmaxes, pooled, out = net(xs=xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
             sorted_out, sorted_out_indices = torch.sort(out.squeeze(0), descending=True)
             for pred_class_idx in sorted_out_indices[:3]:
                 pred_class = classes[pred_class_idx]
@@ -135,7 +135,7 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
             shutil.copy(img, dir)
         
         with torch.no_grad():
-            softmaxes, pooled, out = net(xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
+            softmaxes, pooled, out = net(xs=xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
             sorted_out, sorted_out_indices = torch.sort(out.squeeze(0), descending=True)
             
             for pred_class_idx in sorted_out_indices:
