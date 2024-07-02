@@ -216,7 +216,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
         xs, ys = xs.to(device), ys.to(device)
         # Use the model to classify this batch of input data
         with torch.no_grad():
-            softmaxes, _, out = net(xs, inference=True) 
+            softmaxes, _, out = net(xs=xs, inference=True)
 
         max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
         # In PyTorch, images are represented as [channels, height, width]
