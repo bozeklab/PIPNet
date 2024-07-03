@@ -100,6 +100,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                             heatmap = heatmap[...,::-1] # OpenCV's BGR to RGB
                             print('!!!!!!')
                             print(heatmap.shape)
+                            print(img_tensor.squeeze().numpy().shape)
                             print(img_tensor.squeeze().numpy().transpose(1,2,0).shape)
                             heatmap_img =  0.2 * np.float32(heatmap) + 0.6 * np.float32(img_tensor.squeeze().numpy().transpose(1,2,0))
                             plt.imsave(fname=os.path.join(save_path, 'heatmap_p%s.png'%str(prototype_idx.item())),arr=heatmap_img,vmin=0.0,vmax=1.0)
