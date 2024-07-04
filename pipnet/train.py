@@ -58,7 +58,10 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     for i, (xs1, xs2, ys) in train_iter:       
         
         xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
-       
+        print('!!!!')
+        print(xs1.shape)
+        print(xs2.shape)
+
         # Reset the gradients
         optimizer_classifier.zero_grad(set_to_none=True)
         optimizer_net.zero_grad(set_to_none=True)
