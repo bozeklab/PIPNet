@@ -329,25 +329,25 @@ def run_pipnet(args=None):
 
 
     # EVALUATE OOD DETECTION
-    ood_datasets = ["CARS", "CUB-200-2011", "pets"]
-    for percent in [95.]:
-        print("\nOOD Evaluation for epoch", epoch,"with percent of", percent, flush=True)
-        _, _, _, class_thresholds = get_thresholds(net, testloader, epoch, device, percent, log)
-        print("Thresholds:", class_thresholds, flush=True)
-        # Evaluate with in-distribution data
-        id_fraction = eval_ood(net, testloader, epoch, device, class_thresholds)
-        print("ID class threshold ID fraction (TPR) with percent",percent,":", id_fraction, flush=True)
-        
-        # Evaluate with out-of-distribution data
-        for ood_dataset in ood_datasets:
-            if ood_dataset != args.dataset:
-                print("\n OOD dataset: ", ood_dataset,flush=True)
-                ood_args = deepcopy(args)
-                ood_args.dataset = ood_dataset
-                _, _, _, _, _,ood_testloader, _, _ = get_dataloaders(ood_args, device)
-                
-                id_fraction = eval_ood(net, ood_testloader, epoch, device, class_thresholds)
-                print(args.dataset, "- OOD", ood_dataset, "class threshold ID fraction (FPR) with percent",percent,":", id_fraction, flush=True)                
+    # ood_datasets = ["CARS", "CUB-200-2011", "pets"]
+    # for percent in [95.]:
+    #     print("\nOOD Evaluation for epoch", epoch,"with percent of", percent, flush=True)
+    #     _, _, _, class_thresholds = get_thresholds(net, testloader, epoch, device, percent, log)
+    #     print("Thresholds:", class_thresholds, flush=True)
+    #     # Evaluate with in-distribution data
+    #     id_fraction = eval_ood(net, testloader, epoch, device, class_thresholds)
+    #     print("ID class threshold ID fraction (TPR) with percent",percent,":", id_fraction, flush=True)
+    #
+    #     # Evaluate with out-of-distribution data
+    #     for ood_dataset in ood_datasets:
+    #         if ood_dataset != args.dataset:
+    #             print("\n OOD dataset: ", ood_dataset,flush=True)
+    #             ood_args = deepcopy(args)
+    #             ood_args.dataset = ood_dataset
+    #             _, _, _, _, _,ood_testloader, _, _ = get_dataloaders(ood_args, device)
+    #
+    #             id_fraction = eval_ood(net, ood_testloader, epoch, device, class_thresholds)
+    #             print(args.dataset, "- OOD", ood_dataset, "class threshold ID fraction (FPR) with percent",percent,":", id_fraction, flush=True)
 
     print("Done!", flush=True)
 
