@@ -31,9 +31,9 @@ class PIPNet(nn.Module):
     def forward(self, xs,  inference=False):
         features = self._net(xs)
         proto_features = self._add_on(features)
+        print('!!! output shape ')
+        print(proto_features.shape)
         pooled = self._pool(proto_features)
-        print('!!! pooled shape ')
-        print(pooled.shape)
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)  #during inference, ignore all prototypes that have 0.1 similarity or lower
             out = self._classification(clamped_pooled) #shape (bs*2, num_classes)
