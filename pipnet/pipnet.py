@@ -25,14 +25,12 @@ class PIPNet(nn.Module):
         self._net = feature_net
         self._add_on = add_on_layers
         self._pool = pool_layer
-        self._embed_size = None
         self._classification = classification_layer
         self._multiplier = classification_layer.normalization_multiplier
 
     def forward(self, xs,  inference=False):
         features = self._net(xs)
         proto_features = self._add_on(features)
-        self._embed_size = proto_features.shape[-2:]
         pooled = self._pool(proto_features)
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)  #during inference, ignore all prototypes that have 0.1 similarity or lower
