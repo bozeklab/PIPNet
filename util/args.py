@@ -123,7 +123,6 @@ def get_args() -> argparse.Namespace:
         if not os.path.exists(args.log_dir):
             os.makedirs(args.log_dir)
 
-
     return args
 
 
