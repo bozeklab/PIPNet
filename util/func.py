@@ -2,7 +2,7 @@ import torch
 
 def get_patch_size(args):
     patchsize = args.image_size // args.embed_size[0]
-    print('!!!')
+    print('!!! patchsize')
     print(patchsize)
     skip = round((args.image_size - patchsize) / (args.wshape-1))
     return patchsize, skip
