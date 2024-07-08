@@ -128,7 +128,6 @@ def run_pipnet(args=None):
         xs1 = xs1.to(device)
         proto_features, _, _ = net(xs1)
         wshape = proto_features.shape[-1]
-        args.embed_size = proto_features.shape[-2:]
         args.wshape = wshape #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
     
