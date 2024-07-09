@@ -60,9 +60,12 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             pooled = pooled.squeeze(0) 
             pfs = pfs.squeeze(0) 
 
-            print('!!!!')
-            print(pfs.shape)
-            print(pooled.shape)
+            #print('!!!!')
+            #print(pfs.shape)
+            #print(pooled.shape)
+
+            # pfs shape [256, 16, 16]
+            # pooled [256]
 
             for p in range(pooled.shape[0]):
                 c_weight = torch.max(classification_weights[:,p]) 
@@ -133,6 +136,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open))
                                 img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
+                                print('--- cooordinates ---')
+                                print(h_coor_min, h_coor_max, w_coor_min, w_coor_max)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                         
                                 saved[p]+=1
