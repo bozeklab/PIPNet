@@ -136,8 +136,6 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open))
                                 img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
-                                print('--- cooordinates ---')
-                                print(h_coor_max - h_coor_min, w_coor_max - w_coor_min)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                         
                                 saved[p]+=1
@@ -257,8 +255,6 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open).convert("RGB"))
                     img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                     h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
-                    print('--- cooordinates rect ---')
-                    print(h_coor_max - h_coor_min, w_coor_max - w_coor_min)
                     img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
