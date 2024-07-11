@@ -49,8 +49,8 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
             count_per_y = 0
         else:
             count_per_y +=1
-            if count_per_y>5: #show max 5 imgs per class to speed up the process
-                continue
+            #if count_per_y>5: #show max 5 imgs per class to speed up the process
+            #    continue
         xs, ys = xs.to(device), ys.to(device)
         img = imgs[k][0]
         img_name = os.path.splitext(os.path.basename(img))[0]
