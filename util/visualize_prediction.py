@@ -54,6 +54,8 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
         xs, ys = xs.to(device), ys.to(device)
         img = imgs[k][0]
         img_name = os.path.splitext(os.path.basename(img))[0]
+        print('!!')
+        print(ys[0])
         dir = os.path.join(save_dir, img_name, ys[0].item())
         if not os.path.exists(dir):
             os.makedirs(dir)
