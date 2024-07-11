@@ -356,7 +356,6 @@ class TwoAugSupervisedDataset(torch.utils.data.Dataset):
             self.imgs = list(zip(dataset._image_files, dataset._labels))
         self.transform1 = transform1
         self.transform2 = transform2
-        
 
     def __getitem__(self, index):
         image, target = self.dataset[index]
