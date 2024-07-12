@@ -104,6 +104,10 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     pooled1, pooled2 = pooled.chunk(2)
     pf1, pf2 = proto_features.chunk(2)
 
+    print('!!!!')
+    print(pooled1.shape)
+    print(pf1.shape)
+
     embv2 = pf2.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     embv1 = pf1.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     
