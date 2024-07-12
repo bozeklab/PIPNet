@@ -107,7 +107,7 @@ def calculate_loss(proto_features, pooled, hflip, out, ys1, align_pf_weight, t_w
     pf_parts = []
     for i in range(N):
         if hflip[i]:
-            pf_parts.append(torch.flip(pf1[i], [2]).unsqueeze(0))
+            pf_parts.append(torch.flip(pf2[i], [2]).unsqueeze(0))
     pf2 = torch.cat(pf_parts, dim=0)
 
     embv2 = pf2.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
