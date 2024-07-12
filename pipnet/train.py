@@ -55,7 +55,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     lrs_net = []
     lrs_class = []
     # Iterate through the data set to update leaves, prototypes and network
-    for i, (xs1, xs2, ys) in train_iter:       
+    for i, (xs1, xs2, hflip, ys) in train_iter:
         
         xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
 

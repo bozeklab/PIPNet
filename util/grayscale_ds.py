@@ -87,7 +87,7 @@ def main():
                              os.path.join(root_dir, 'test'), image_size, seed, validation_size)
 
     for idx in range(len(trainset)):
-        xs1, xs2, ys = trainset[idx]
+        xs1, xs2, hflip, ys = trainset[idx]
 
         display_tensor_images(xs1, xs2)
 

@@ -7,6 +7,7 @@ import torch.utils.data
 import torchvision
 import torchvision.transforms as transforms
 from typing import Tuple, Dict
+import torchvision.transforms.functional as F
 from torch import Tensor
 import random
 from sklearn.model_selection import train_test_split
@@ -348,6 +349,7 @@ class TwoAugSupervisedDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, transform1, transform2):
         self.dataset = dataset
         self.classes = dataset.classes
+        self.flip = RandomHorizontalFlip()
         if type(dataset) == torchvision.datasets.folder.ImageFolder:
             self.imgs = dataset.imgs
             self.targets = dataset.targets
@@ -360,10 +362,20 @@ class TwoAugSupervisedDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         image, target = self.dataset[index]
         image = self.transform1(image)
-        return self.transform2(image), self.transform2(image), target
+        im1 = self.transform2(image)
+        im2 = self.transform2(image)
+        im2, hflip = self.flip(im2)
+        return im1, im2, hflip, target
 
     def __len__(self):
         return len(self.dataset)
+
+
+class RandomHorizontalFlip(transforms.RandomHorizontalFlip):
+    def forward(self, img):
+        if torch.rand(1) < 0.5:
+            return F.hflip(img), True
+        return img, False
 
 # function copied from https://pytorch.org/vision/stable/_modules/torchvision/transforms/autoaugment.html#TrivialAugmentWide (v0.12) and adapted
 class TrivialAugmentWideNoColor(transforms.TrivialAugmentWide):
