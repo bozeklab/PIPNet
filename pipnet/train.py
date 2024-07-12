@@ -74,6 +74,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         pf2 = torch.cat(pf_parts, dim=0)
         print('!!!')
         print(pf2.shape)
+        print(pf1.shape)
         loss, acc = calculate_loss(proto_features, pooled, hflip, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight, net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         
         # Compute the gradient
