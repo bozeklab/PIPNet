@@ -103,8 +103,10 @@ def calculate_loss(proto_features, pooled, hflip, out, ys1, align_pf_weight, t_w
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
     pf1, pf2 = proto_features.chunk(2)
-    if hflip:
-        pf2 = torch.flip(3)
+    N = hflip.shape[0]
+    for i in range(N):
+        if pf1[i]:
+            pf1[i] = torch.flip(pf1[i], [3])
 
     embv2 = pf2.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     embv1 = pf1.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
