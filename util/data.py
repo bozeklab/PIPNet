@@ -326,10 +326,10 @@ def get_grayscale(augment:bool, train_dir:str, project_dir: str, test_dir:str, i
 
     if augment:
         transform1 = transforms.Compose([
-            transforms.Resize(size=(img_size+32, img_size+32)), 
+            transforms.Resize(size=(img_size+64, img_size+64)),
             TrivialAugmentWideNoColor(),
             transforms.RandomHorizontalFlip(),
-            transforms.RandomResizedCrop(img_size+8, scale=(0.95, 1.))
+            transforms.RandomResizedCrop(img_size+16, scale=(0.95, 1.))
         ])
         transform2 = transforms.Compose([
                             TrivialAugmentWideNoShape(),
