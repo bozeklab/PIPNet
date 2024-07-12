@@ -65,11 +65,6 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
        
         # Perform a forward pass through the network
         proto_features, pooled, out = net(torch.cat([xs1, xs2]))
-        pooled1, pooled2 = pooled.chunk(2)
-        pf1, pf2 = proto_features.chunk(2)
-        print('!!!')
-        print(pooled1.shape)
-        print(pf1.shape)
         loss, acc = calculate_loss(proto_features, pooled, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight, net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         
         # Compute the gradient
@@ -104,10 +99,12 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     
     return train_info
 
-def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
+def calculate_loss(proto_features, pooled, hflip, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
     pf1, pf2 = proto_features.chunk(2)
+    if hflip:
+        pf2 = torch.flip(3)
 
     embv2 = pf2.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     embv1 = pf1.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
