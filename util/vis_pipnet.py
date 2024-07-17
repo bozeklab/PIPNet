@@ -111,7 +111,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                         if idx == i:
                             # Use the model to classify this batch of input data
                             with torch.no_grad():
-                                softmaxes, pooled, out = net(xs=xs, inference=True) #softmaxes has shape (1, num_prototypes, W, H)
+                                proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xd_ds=xs_ds, inference=True) #softmaxes has shape (1, num_prototypes, W, H)
                                 outmax = torch.amax(out,dim=1)[0] #shape ([1]) because batch size of projectloader is 1
                                 if outmax.item() == 0.:
                                     abstained+=1
@@ -211,17 +211,17 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
 
     # Iterate through the data
     images_seen_before = 0
-    for i, (xs, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
+    for i, (xs, xs_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
         if i % skip_img == 0:
             images_seen_before+=xs.shape[0]
             continue
         
-        xs, ys = xs.to(device), ys.to(device)
+        xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
         # Use the model to classify this batch of input data
         with torch.no_grad():
-            softmaxes, _, out = net(xs=xs, inference=True)
+            proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, inference=True)
 
-        max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
+        max_per_prototype, max_idx_per_prototype = torch.max(out, dim=0)
         # In PyTorch, images are represented as [channels, height, width]
         max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
         max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
