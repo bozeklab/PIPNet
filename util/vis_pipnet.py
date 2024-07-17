@@ -111,7 +111,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                         if idx == i:
                             # Use the model to classify this batch of input data
                             with torch.no_grad():
-                                proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xd_ds=xs_ds, inference=True) #softmaxes has shape (1, num_prototypes, W, H)
+                                proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True) #softmaxes has shape (1, num_prototypes, W, H)
                                 outmax = torch.amax(out,dim=1)[0] #shape ([1]) because batch size of projectloader is 1
                                 if outmax.item() == 0.:
                                     abstained+=1
