@@ -82,7 +82,6 @@ def get_network(num_classes: int, args: argparse.Namespace):
     else:
         raise Exception('other base architecture NOT implemented')
     
-    
     if args.num_features == 0:
         num_prototypes = first_add_on_layer_in_channels
         print("Number of prototypes: ", num_prototypes, flush=True)

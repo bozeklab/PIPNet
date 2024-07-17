@@ -31,7 +31,7 @@ def get_data(args: argparse.Namespace):
         return get_grayscale(True, './data/train', './data/train', './data/test', args.image_size, args.seed, args.validation_size)
     if args.dataset == 'grayscale_mito':
         return get_grayscale(True, '/data/pwojcik/mito_scale_resized_512_split/train', '/data/pwojcik/mito_scale_resized_512_split/train',
-                             '/data/pwojcik/mito_scale_resized_512_split/test', args.image_size, args.seed,
+                             '/data/pwojcik/mito_scale_resized_512_split/test', args.image_size, args.image_size_ds, args.seed,
                              args.validation_size)
     raise Exception(f'Could not load data set, data set "{args.dataset}" not found!')
 
@@ -141,7 +141,8 @@ def get_dataloaders(args: argparse.Namespace, device):
     print("Num classes (k) = ", len(classes), classes[:5], "etc.", flush=True)
     return trainloader, trainloader_pretraining, trainloader_normal, trainloader_normal_augment, projectloader, testloader, test_projectloader, classes
 
-def create_datasets(transform1, transform2, transform_no_augment, num_channels:int, train_dir:str, project_dir: str, test_dir:str, seed:int, validation_size:float, train_dir_pretrain = None, test_dir_projection = None, transform1p=None):
+def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transform_no_augment, transform_no_augment_ds,
+                    num_channels:int, train_dir:str, project_dir: str, test_dir:str, seed:int, validation_size:float, train_dir_pretrain = None, test_dir_projection = None, transform1p=None):
     
     trainvalset = torchvision.datasets.ImageFolder(train_dir)
     classes = trainvalset.classes
@@ -160,7 +161,10 @@ def create_datasets(transform1, transform2, transform_no_augment, num_channels:i
     else:
         testset = torchvision.datasets.ImageFolder(test_dir, transform=transform_no_augment)
     
-    trainset = torch.utils.data.Subset(TwoAugSupervisedDataset(trainvalset, transform1=transform1, transform2=transform2), indices=train_indices)
+    trainset = torch.utils.data.Subset(FourAugSupervisedDataset(trainvalset, transform1=transform1,
+                                                                transform2=transform2,
+                                                                transform3=transform1_ds,
+                                                                transform4=transform2_ds), indices=train_indices)
     trainset_normal = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transform_no_augment), indices=train_indices)
     trainset_normal_augment = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transforms.Compose([transform1, transform2])), indices=train_indices)
     projectset = torchvision.datasets.ImageFolder(project_dir, transform=transform_no_augment)
@@ -178,7 +182,11 @@ def create_datasets(transform1, transform2, transform_no_augment, num_channels:i
             subset_targets_pr = list(np.array(targets_pr)[indices_pr])
             train_indices_pr, test_indices_pr = train_test_split(indices_pr,test_size=validation_size,stratify=subset_targets_pr, random_state=seed)
 
-        trainset_pretraining = torch.utils.data.Subset(TwoAugSupervisedDataset(trainvalset_pr, transform1=transform1p, transform2=transform2), indices=train_indices_pr)
+        trainset_pretraining = torch.utils.data.Subset(FourAugSupervisedDataset(trainvalset_pr,
+                                                                                transform1=transform1,
+                                                                                transform2=transform2,
+                                                                                transform3=transform1_ds,
+                                                                                transform4=transform2_ds), indices=train_indices_pr)
     else:
         trainset_pretraining = None
     
@@ -313,24 +321,38 @@ def get_cars(augment: bool, train_dir:str, project_dir: str, test_dir:str, img_s
 
     return create_datasets(transform1, transform2, transform_no_augment, 3, train_dir, project_dir, test_dir, seed, validation_size)
 
-def get_grayscale(augment:bool, train_dir:str, project_dir: str, test_dir:str, img_size: int, seed:int, validation_size:float, train_dir_pretrain = None): 
+def get_grayscale(augment:bool, train_dir: str, project_dir: str, test_dir:str, img_size: int, img_size_ds: int,
+                  seed:int, validation_size: float, train_dir_pretrain = None):
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     normalize = transforms.Normalize(mean=mean,std=std)
     transform_no_augment = transforms.Compose([
-                            transforms.Resize(size=(img_size, img_size)),
-                            transforms.Grayscale(3), #convert to grayscale with three channels
-                            transforms.ToTensor(),
-                            normalize
-                        ])
+                           transforms.Resize(size=(img_size, img_size)),
+                           transforms.Grayscale(3), #convert to grayscale with three channels
+                           transforms.ToTensor(),
+                           normalize
+                          ])
+
+    transform_no_augment_ds = transforms.Compose([
+                              transforms.Resize(size=(img_size_ds, img_size_ds)),
+                              transforms.Grayscale(3), #convert to grayscale with three channels
+                              transforms.ToTensor(),
+                              normalize
+                            ])
 
     if augment:
         transform1 = transforms.Compose([
-            transforms.Resize(size=(img_size+16, img_size+16)),
+            transforms.Resize(size=(img_size+64, img_size+64)),
             TrivialAugmentWideNoColor(),
             transforms.RandomHorizontalFlip(),
-            transforms.RandomResizedCrop(img_size+8, scale=(0.95, 1.))
+            transforms.RandomResizedCrop(img_size+16, scale=(0.95, 1.))
         ])
+        transform1_ds = transforms.Compose([
+                        transforms.Resize(size=(img_size_ds+64, img_size_ds+64)),
+                        TrivialAugmentWideNoColor(),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.RandomResizedCrop(img_size_ds+16, scale=(0.95, 1.))
+                        ])
         transform2 = transforms.Compose([
                             TrivialAugmentWideNoShape(),
                             transforms.RandomCrop(size=(img_size, img_size)), #includes crop
@@ -338,18 +360,29 @@ def get_grayscale(augment:bool, train_dir:str, project_dir: str, test_dir:str, i
                             transforms.ToTensor(),
                             normalize
                             ])
+        transform2_ds = transforms.Compose([
+                            TrivialAugmentWideNoShape(),
+                            transforms.RandomCrop(size=(img_size_ds, img_size_ds)), #includes crop
+                            transforms.Grayscale(3),#convert to grayscale with three channels
+                            transforms.ToTensor(),
+                            normalize
+                            ])
     else:
-        transform1 = transform_no_augment    
-        transform2 = transform_no_augment           
+        transform1 = transform_no_augment
+        transform2 = transform_no_augment
 
-    return create_datasets(transform1, transform2, transform_no_augment, 3, train_dir, project_dir, test_dir, seed, validation_size)
+        transform1_ds = transform_no_augment_ds
+        transform2_ds = transform_no_augment_ds
+
+    return create_datasets(transform1, transform2, transform1_ds, transform2_ds,
+                           transform_no_augment, transform_no_augment_ds, 3,
+                           train_dir, project_dir, test_dir, seed, validation_size)
 
 class TwoAugSupervisedDataset(torch.utils.data.Dataset):
     r"""Returns two augmentation and no labels."""
     def __init__(self, dataset, transform1, transform2):
         self.dataset = dataset
         self.classes = dataset.classes
-        self.flip = RandomHorizontalFlip()
         if type(dataset) == torchvision.datasets.folder.ImageFolder:
             self.imgs = dataset.imgs
             self.targets = dataset.targets
@@ -364,8 +397,43 @@ class TwoAugSupervisedDataset(torch.utils.data.Dataset):
         image = self.transform1(image)
         im1 = self.transform2(image)
         im2 = self.transform2(image)
-        im2, hflip = self.flip(im2)
-        return im1, im2, hflip, target
+        return im1, im2, target
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class FourAugSupervisedDataset(torch.utils.data.Dataset):
+    r"""Returns two augmentation and no labels."""
+    def __init__(self, dataset, transform1, transform2, transform3, transform4):
+        self.dataset = dataset
+        self.classes = dataset.classes
+        self.flip = RandomHorizontalFlip()
+        if type(dataset) == torchvision.datasets.folder.ImageFolder:
+            self.imgs = dataset.imgs
+            self.targets = dataset.targets
+        else:
+            self.targets = dataset._labels
+            self.imgs = list(zip(dataset._image_files, dataset._labels))
+        self.transform1 = transform1
+        self.transform2 = transform2
+        self.transform3 = transform3
+        self.transform4 = transform4
+
+    def __getitem__(self, index):
+        image, target = self.dataset[index]
+        image_ = image.copy()
+        image = self.transform1(image)
+        im1 = self.transform2(image)
+        im2 = self.transform2(image)
+        im2, hflip1 = self.flip(im2)
+
+        image_ds = self.transform3(image_)
+        im1_ds = self.transform4(image_ds)
+        im2_ds = self.transform4(image_ds)
+        im2_ds, hflip2 = self.flip(im2_ds)
+
+        return im1, im2, im1_ds, im2_ds, hflip1, hflip2, target
 
     def __len__(self):
         return len(self.dataset)

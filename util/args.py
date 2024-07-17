@@ -75,8 +75,12 @@ def get_args() -> argparse.Namespace:
                         help='Number of prototypes. When zero (default) the number of prototypes is the number of output channels of backbone. If this value is set, then a 1x1 conv layer will be added. Recommended to keep 0, but can be increased when number of classes > num output channels in backbone.')
     parser.add_argument('--image_size',
                         type=int,
-                        default=224,
+                        default=448,
                         help='Input images will be resized to --image_size x --image_size (square). Code only tested with 224x224, so no guarantees that it works for different sizes.')
+    parser.add_argument('--image_size_ds',
+                        type=int,
+                        default=224,
+                        help='Input images will be downsampled to --image_size x --image_size (square).')
     parser.add_argument('--state_dict_dir_net',
                         type=str,
                         default='',

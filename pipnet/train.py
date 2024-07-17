@@ -55,7 +55,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     lrs_net = []
     lrs_class = []
     # Iterate through the data set to update leaves, prototypes and network
-    for i, (xs1, xs2, hflip, ys) in train_iter:
+    for i, (xs1, xs2, xs1_ds, xs2_ds, hflip1, hflip2, ys) in train_iter:
         
         xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
 
@@ -65,7 +65,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
        
         # Perform a forward pass through the network
         proto_features, pooled, out = net(torch.cat([xs1, xs2]))
-        loss, acc = calculate_loss(proto_features, pooled, hflip, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight, net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
+        loss, acc = calculate_loss(proto_features, pooled, hflip1, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight, net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         
         # Compute the gradient
         loss.backward()
