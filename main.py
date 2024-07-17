@@ -124,9 +124,10 @@ def run_pipnet(args=None):
 
     # Forward one batch through the backbone to get the latent output size
     with torch.no_grad():
-        xs1, _, _, _, _, _, ys = next(iter(trainloader))
+        xs1, _, xs1_ds, xs2_ds, ys = next(iter(trainloader))
         xs1 = xs1.to(device)
-        proto_features ,_, _, _ = net(xs1)
+        xs1_ds = xs1_ds.to(device)
+        proto_features, _, _, _ = net(xs1, xs1_ds)
         wshape = proto_features.shape[-1]
         args.wshape = wshape #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
