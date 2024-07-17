@@ -117,7 +117,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                     abstained+=1
                             
                             # Take the max per prototype.                             
-                            max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
+                            max_per_prototype, max_idx_per_prototype = torch.max(out, dim=0)
                             max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
                             max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1) #shape (num_prototypes)
                             
