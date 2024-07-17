@@ -35,6 +35,9 @@ class PIPNet(nn.Module):
         proto_features_ds = self._add_on(features_ds)
         pooled = self._pool(proto_features)
         pooled_ds = self._pool(proto_features_ds)
+        print('!!!')
+        print(pooled.shape)
+        print(pooled_ds.shape)
         pooled = torch.cat([pooled, pooled_ds], dim=0)
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)  #during inference, ignore all prototypes that have 0.1 similarity or lower
