@@ -156,21 +156,27 @@ def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transf
             raise ValueError("There is no test set directory, so validation size should be > 0 such that training set can be split.")
         subset_targets = list(np.array(targets)[train_indices])
         train_indices, test_indices = train_test_split(train_indices,test_size=validation_size,stratify=subset_targets, random_state=seed)
-        testset = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transform_no_augment), indices=test_indices)
+        testset = torch.utils.data.Subset(TwoAugSupervisedDataset(train_dir, transform_no_augment, transform_no_augment_ds),
+                                          indices=test_indices)
         print("Samples in trainset:", len(indices), "of which",len(train_indices),"for training and ", len(test_indices),"for testing.", flush=True)
     else:
-        testset = torchvision.datasets.ImageFolder(test_dir, transform=transform_no_augment)
+        testset = TwoAugSupervisedDataset(torchvision.datasets.ImageFolder(test_dir),
+                                          transform1=transform_no_augment, transform2=transform_no_augment_ds)
     
     trainset = torch.utils.data.Subset(FourAugSupervisedDataset(trainvalset, transform1=transform1,
                                                                 transform2=transform2,
                                                                 transform3=transform1_ds,
                                                                 transform4=transform2_ds), indices=train_indices)
-    trainset_normal = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transform_no_augment), indices=train_indices)
-    trainset_normal_augment = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transforms.Compose([transform1, transform2])), indices=train_indices)
-    projectset = torchvision.datasets.ImageFolder(project_dir, transform=transform_no_augment)
+    trainset_normal = torch.utils.data.Subset(TwoAugSupervisedDataset(torchvision.datasets.ImageFolder(test_dir),
+                                                                      transform1=transform_no_augment, transform2=transform_no_augment_ds), indices=train_indices)
+    trainset_normal_augment = torch.utils.data.Subset(TwoAugSupervisedDataset(torchvision.datasets.ImageFolder(train_dir),
+                                                                              transform1=transforms.Compose([transform1,transform2]),
+                                                                              transform2=transforms.Compose([transform1_ds, transform2_ds])), indices=train_indices)
+    projectset = TwoAugSupervisedDataset(torchvision.datasets.ImageFolder(test_dir),
+                                         transform1=transform_no_augment, transform2=transform_no_augment_ds)
 
     if test_dir_projection is not None:
-        testset_projection = torchvision.datasets.ImageFolder(test_dir_projection, transform=transform_no_augment)
+        testset_projection = torchvision.datasets.ImageFolder(test_dir_projection)
     else:
         testset_projection = testset
     if train_dir_pretrain is not None:
@@ -191,6 +197,7 @@ def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transf
         trainset_pretraining = None
     
     return trainset, trainset_pretraining, trainset_normal, trainset_normal_augment, projectset, testset, testset_projection, classes, num_channels, train_indices, torch.LongTensor(targets)
+
 
 def get_pets(augment:bool, train_dir:str, project_dir: str, test_dir:str, img_size: int, seed:int, validation_size:float): 
     mean = (0.485, 0.456, 0.406)
@@ -378,6 +385,7 @@ def get_grayscale(augment:bool, train_dir: str, project_dir: str, test_dir:str, 
                            transform_no_augment, transform_no_augment_ds, 3,
                            train_dir, project_dir, test_dir, seed, validation_size)
 
+
 class TwoAugSupervisedDataset(torch.utils.data.Dataset):
     r"""Returns two augmentation and no labels."""
     def __init__(self, dataset, transform1, transform2):
@@ -394,9 +402,8 @@ class TwoAugSupervisedDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         image, target = self.dataset[index]
-        image = self.transform1(image)
-        im1 = self.transform2(image)
-        im2 = self.transform2(image)
+        im1 = self.transform1(image)
+        im2 = self.transform1(image)
         return im1, im2, target
 
     def __len__(self):
