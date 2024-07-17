@@ -441,7 +441,7 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
 
 class RandomHorizontalFlip(transforms.RandomHorizontalFlip):
     def forward(self, img):
-        if torch.rand(1) < 0.5:
+        if torch.rand(1) < 0.0:
             return F.hflip(img), True
         return img, False
 
