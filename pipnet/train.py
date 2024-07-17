@@ -57,15 +57,15 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, xs1_ds, xs2_ds, hflip1, hflip2, ys) in train_iter:
         
-        xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
+        xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
         # Reset the gradients
         optimizer_classifier.zero_grad(set_to_none=True)
         optimizer_net.zero_grad(set_to_none=True)
        
         # Perform a forward pass through the network
-        proto_features, pooled, out = net(torch.cat([xs1, xs2]))
-        loss, acc = calculate_loss(proto_features, pooled, hflip1, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
+        proto_features, proto_features_ds, pooled, out = net(torch.cat([xs1, xs2]), torch.cat([xs1_ds, xs2_ds]))
+        loss, acc = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         
         # Compute the gradient
@@ -100,7 +100,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     
     return train_info
 
-def calculate_loss(proto_features, pooled, hflip, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
+def calculate_loss(proto_features, proto_features_ds, hflip_ds, pooled, hflip, out,
+                   ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
     pf1, pf2 = proto_features.chunk(2)
@@ -113,10 +114,24 @@ def calculate_loss(proto_features, pooled, hflip, out, ys1, align_pf_weight, t_w
             pf_parts.append(pf2[i].unsqueeze(0))
     pf2 = torch.cat(pf_parts, dim=0)
 
+    pf1_ds, pf2_ds = proto_features_ds.chunk(2)
+    N = hflip_ds.shape[0]
+    pf_parts_ds = []
+    for i in range(N):
+        if hflip_ds[i]:
+            pf_parts_ds.append(torch.flip(pf2_ds[i], [2]).unsqueeze(0))
+        else:
+            pf_parts_ds.append(pf2_ds[i].unsqueeze(0))
+    pf2_ds = torch.cat(pf_parts_ds, dim=0)
+
     embv2 = pf2.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     embv1 = pf1.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
+
+    embv2_ds = pf2_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
+    embv1_ds = pf1_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     
     a_loss_pf = (align_loss(embv1, embv2.detach())+ align_loss(embv2, embv1.detach()))/2.
+    a_loss_pf += (align_loss(embv1_ds, embv2_ds.detach()) + align_loss(embv2_ds, embv1_ds.detach())) / 2.
     tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
     if not finetune:

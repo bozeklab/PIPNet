@@ -24,8 +24,6 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
     if os.path.exists(save_dir):
         shutil.rmtree(save_dir)
 
-    patchsize, skip = get_patch_size(args)
-
     num_workers = args.num_workers
 
     mean = (0.485, 0.456, 0.406)
@@ -108,8 +106,6 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
     if os.path.exists(save_dir):
         shutil.rmtree(save_dir)
 
-    patchsize, skip = get_patch_size(args)
-
     num_workers = args.num_workers
 
     mean = (0.485, 0.456, 0.406)
@@ -149,6 +145,8 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
                 
                 simweights = []
                 for prototype_idx in sorted_pooled_indices:
+                    patchsize, skip = get_patch_size(args, prototype_idx, net.module._num_prototypes)
+
                     simweight = pooled[0,prototype_idx].item() * net.module._classification.weight[pred_class_idx, prototype_idx].item()
                     
                     simweights.append(simweight)

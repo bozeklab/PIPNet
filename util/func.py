@@ -1,8 +1,12 @@
 import torch
 
-def get_patch_size(args):
-    patchsize = args.image_size // args.wshape
-    skip = round((args.image_size - patchsize) / (args.wshape-1))
+def get_patch_size(args, p, num_prototypes):
+    ws = args.wshape
+    if p >= num_prototypes // 2:
+        ws = ws // 2
+
+    patchsize = args.image_size // ws
+    skip = round((args.image_size - patchsize) / (ws-1))
     return patchsize, skip
 
 def init_weights_xavier(m):

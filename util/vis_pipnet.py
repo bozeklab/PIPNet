@@ -30,8 +30,6 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         saved[p]=0
         saved_ys[p]=[]
         tensors_per_prototype[p]=[]
-    
-    patchsize, skip = get_patch_size(args)
 
     imgs = projectloader.dataset.imgs
     
@@ -189,8 +187,6 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
         saved[p]=0
         saved_ys[p]=[]
         tensors_per_prototype[p]=[]
-    
-    patchsize, skip = get_patch_size(args)
 
     imgs = projectloader.dataset.imgs
     
@@ -230,6 +226,9 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
         max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
         max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
         for p in range(0, net.module._num_prototypes):
+
+            patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
+
             c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
             if c_weight>0:
                 h_idx = max_idx_per_prototype_h[p, max_idx_per_prototype_w[p]]

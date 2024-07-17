@@ -28,17 +28,21 @@ class PIPNet(nn.Module):
         self._classification = classification_layer
         self._multiplier = classification_layer.normalization_multiplier
 
-    def forward(self, xs,  inference=False):
+    def forward(self, xs, xs_ds, inference=False):
         features = self._net(xs)
+        features_ds = self._net(xs_ds)
         proto_features = self._add_on(features)
+        proto_features_ds = self._add_on(features_ds)
         pooled = self._pool(proto_features)
+        pooled_ds = self._pool(proto_features_ds)
+        pooled = torch.cat([pooled, pooled_ds], dim=0)
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)  #during inference, ignore all prototypes that have 0.1 similarity or lower
             out = self._classification(clamped_pooled) #shape (bs*2, num_classes)
-            return proto_features, clamped_pooled, out
+            return proto_features, proto_features_ds, clamped_pooled, out
         else:
             out = self._classification(pooled) #shape (bs*2, num_classes) 
-            return proto_features, pooled, out
+            return proto_features, proto_features_ds, pooled, out
 
 
 base_architecture_to_features = {'resnet18': resnet18_features,
@@ -83,16 +87,16 @@ def get_network(num_classes: int, args: argparse.Namespace):
         raise Exception('other base architecture NOT implemented')
     
     if args.num_features == 0:
-        num_prototypes = first_add_on_layer_in_channels
+        num_prototypes = 2 * first_add_on_layer_in_channels
         print("Number of prototypes: ", num_prototypes, flush=True)
         add_on_layers = nn.Sequential(
             nn.Softmax(dim=1), #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1                
     )
     else:
-        num_prototypes = args.num_features
+        num_prototypes = 2 * args.num_features
         print("Number of prototypes set from", first_add_on_layer_in_channels, "to", num_prototypes,". Extra 1x1 conv layer added. Not recommended.", flush=True)
         add_on_layers = nn.Sequential(
-            nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=num_prototypes, kernel_size=1, stride = 1, padding=0, bias=True),
+            nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=args.num_features, kernel_size=1, stride = 1, padding=0, bias=True),
             nn.Softmax(dim=1), #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1                
     )
     pool_layer = nn.Sequential(
