@@ -420,6 +420,7 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
     def __init__(self, root, transform1, transform2,  loader=Image.open,
                  is_valid_file=None):
         super(DualTransformImageFolder, self).__init__(root, transform1, transform2, loader, is_valid_file)
+        self.transform1 = transform1
         self.transform2 = transform2
 
     def __getitem__(self, index):
