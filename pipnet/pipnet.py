@@ -96,7 +96,7 @@ def get_network(num_classes: int, args: argparse.Namespace):
         num_prototypes = 2 * args.num_features
         print("Number of prototypes set from", first_add_on_layer_in_channels, "to", num_prototypes,". Extra 1x1 conv layer added. Not recommended.", flush=True)
         add_on_layers = nn.Sequential(
-            nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=num_prototypes, kernel_size=1, stride = 1, padding=0, bias=True),
+            nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=args.num_features, kernel_size=1, stride = 1, padding=0, bias=True),
             nn.Softmax(dim=1), #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1                
     )
     pool_layer = nn.Sequential(
