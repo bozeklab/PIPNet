@@ -48,17 +48,13 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     images_seen = 0
     topks = dict()
     # Iterate through the training set
-    for i, (xs, ys) in img_iter:
+    for i, (xs, xs_ds, ys) in img_iter:
         images_seen+=1
-        xs, ys = xs.to(device), ys.to(device)
-
-        print('!!!')
-        print(xs.shape)
-        print(ys.shape)
+        xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
 
         with torch.no_grad():
             # Use the model to classify this batch of input data
-            pfs, pooled, _ = net(xs=xs, inference=True)
+            pfs, pooled, _ = net(xs=xs, xs_ds=xs_ds, inference=True)
             pooled = pooled.squeeze(0) 
             pfs = pfs.squeeze(0) 
 
