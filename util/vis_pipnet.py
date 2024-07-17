@@ -54,7 +54,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
         with torch.no_grad():
             # Use the model to classify this batch of input data
-            pfs, pooled, _ = net(xs=xs, xs_ds=xs_ds, inference=True)
+            pfs, _, pooled, _ = net(xs=xs, xs_ds=xs_ds, inference=True)
             pooled = pooled.squeeze(0) 
             pfs = pfs.squeeze(0) 
 
