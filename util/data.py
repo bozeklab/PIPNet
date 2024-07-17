@@ -386,7 +386,7 @@ def get_grayscale(augment:bool, train_dir: str, project_dir: str, test_dir:str, 
                            train_dir, project_dir, test_dir, seed, validation_size)
 
 
-class TwoAugSupervisedDataset(torch.utils.data.Dataset):
+class TwoAugSupervisedDataset(torchvision.datasets.ImageFolder):
     r"""Returns two augmentation and no labels."""
     def __init__(self, dataset, transform1, transform2):
         self.dataset = dataset
