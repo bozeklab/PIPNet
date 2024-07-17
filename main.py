@@ -124,7 +124,7 @@ def run_pipnet(args=None):
 
     # Forward one batch through the backbone to get the latent output size
     with torch.no_grad():
-        xs1, _, _, _ = next(iter(trainloader))
+        xs1, _, _, _, _, _, ys = next(iter(trainloader))
         xs1 = xs1.to(device)
         proto_features, _, _ = net(xs1)
         wshape = proto_features.shape[-1]
@@ -350,6 +350,7 @@ def run_pipnet(args=None):
     #             print(args.dataset, "- OOD", ood_dataset, "class threshold ID fraction (FPR) with percent",percent,":", id_fraction, flush=True)
 
     print("Done!", flush=True)
+
 
 if __name__ == '__main__':
     args = get_args()
