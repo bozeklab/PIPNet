@@ -102,7 +102,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                     mininterval=50.,
                     desc='Visualizing topk',
                     ncols=0)
-    for i, (xs, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
+    for i, (xs, xs_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
         if i in alli:
             xs, ys = xs.to(device), ys.to(device)
             for p in topks.keys():
