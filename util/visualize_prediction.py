@@ -132,7 +132,9 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
             shutil.copy(img, dir)
         
         with torch.no_grad():
-            softmaxes, pooled, out = net(xs=xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
+            proto_features, proto_features_ds, pooled, out = net(xs=xs, inference=True)
+
+             #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
             sorted_out, sorted_out_indices = torch.sort(out.squeeze(0), descending=True)
             
             for pred_class_idx in sorted_out_indices:
@@ -145,6 +147,13 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
                 
                 simweights = []
                 for prototype_idx in sorted_pooled_indices:
+                    if prototype_idx >= net.module._num_prototypes // 2:
+                        img_size = args.image_size_ds
+                        softmaxes = proto_features_ds
+                    else:
+                        img_size = args.image_size
+                        softmaxes = proto_features
+
                     patchsize, skip = get_patch_size(args, prototype_idx, net.module._num_prototypes)
 
                     simweight = pooled[0,prototype_idx].item() * net.module._classification.weight[pred_class_idx, prototype_idx].item()
@@ -155,10 +164,11 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
                         max_w, max_idx_w = torch.max(max_h, dim=0)
                         max_idx_h = max_idx_h[max_idx_w].item()
                         max_idx_w = max_idx_w.item()
-                        
-                        image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img).convert("RGB"))
+
+
+                        image = transforms.Resize(size=(img_size, img_size))(Image.open(img).convert("RGB"))
                         img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
-                        h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, max_idx_h, max_idx_w)
+                        h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, max_idx_h, max_idx_w)
                         img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                         img_patch = transforms.ToPILImage()(img_tensor_patch)
                         img_patch.save(os.path.join(save_path, 'mul%s_p%s_sim%s_w%s_patch.png'%(str(f"{simweight:.3f}"),str(prototype_idx.item()),str(f"{pooled[0,prototype_idx].item():.3f}"),str(f"{net.module._classification.weight[pred_class_idx, prototype_idx].item():.3f}"))))

@@ -56,11 +56,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             # Use the model to classify this batch of input data
             pfs, _, pooled, _ = net(xs=xs, xs_ds=xs_ds, inference=True)
             pooled = pooled.squeeze(0) 
-            pfs = pfs.squeeze(0) 
-
-            #print('!!!!')
-            #print(pfs.shape)
-            #print(pooled.shape)
+            pfs = pfs.squeeze(0)
 
             # pfs shape [256, 16, 16]
             # pooled [256]
@@ -226,7 +222,6 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
         max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
         max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
         for p in range(0, net.module._num_prototypes):
-
             patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
 
             c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
@@ -251,9 +246,16 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                         imglabel = img_to_open[1]
                         img_to_open = img_to_open[0]
 
-                    image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open).convert("RGB"))
+                    if p >= net.module._num_prototypes // 2:
+                        img_size = args.image_size_ds
+                        softmaxes = proto_features_ds
+                    else:
+                        img_size = args.image_size
+                        softmaxes = proto_features
+
+                    image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
                     img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
-                    h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
+                    h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                     img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
@@ -264,8 +266,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     draw = D.Draw(image)
                     draw.rectangle([(w_coor_min,h_coor_min), (w_coor_max, h_coor_max)], outline='yellow', width=2)
                     image.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
-                    
-        
+
         images_seen_before+=len(ys)
 
     print("num images abstained: ", len(abstainedimgs), flush=True)
