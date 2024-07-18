@@ -115,9 +115,11 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             if p >= net.module._num_prototypes // 2:
                                 img_size = args.image_size_ds
                                 softmaxes = proto_features_ds
+                                pidx = p - net.module._num_prototypes // 2
                             else:
                                 img_size = args.image_size
                                 softmaxes = proto_features
+                                pidx = p
 
                             patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
 
@@ -126,11 +128,11 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
                             max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1) #shape (num_prototypes)
                             
-                            c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
+                            c_weight = torch.max(classification_weights[:, pidx]) #ignore prototypes that are not relevant to any class
                             if (c_weight > 1e-10) or ('pretrain' in foldername):
                                 
-                                h_idx = max_idx_per_prototype_h[p, max_idx_per_prototype_w[p]]
-                                w_idx = max_idx_per_prototype_w[p]
+                                h_idx = max_idx_per_prototype_h[pidx, max_idx_per_prototype_w[pidx]]
+                                w_idx = max_idx_per_prototype_w[pidx]
                                 
                                 img_to_open = imgs[i]
                                 if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
