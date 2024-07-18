@@ -234,13 +234,21 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
         max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
         for p in range(0, net.module._num_prototypes):
             patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
+            if p >= net.module._num_prototypes // 2:
+                img_size = args.image_size_ds
+                softmaxes = proto_features_ds
+                pidx = p - net.module._num_prototypes // 2
+            else:
+                img_size = args.image_size
+                softmaxes = proto_features
+                pidx = p
 
             c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
             if c_weight>0:
-                h_idx = max_idx_per_prototype_h[p, max_idx_per_prototype_w[p]]
-                w_idx = max_idx_per_prototype_w[p]
-                idx_to_select = max_idx_per_prototype[p,h_idx, w_idx].item()
-                found_max = max_per_prototype[p,h_idx, w_idx].item()
+                h_idx = max_idx_per_prototype_h[pidx, max_idx_per_prototype_w[pidx]]
+                w_idx = max_idx_per_prototype_w[pidx]
+                idx_to_select = max_idx_per_prototype[pidx,h_idx, w_idx].item()
+                found_max = max_per_prototype[pidx,h_idx, w_idx].item()
 
                 imgname = imgs[images_seen_before+idx_to_select]
                 if out.max() < 1e-8:
@@ -256,13 +264,6 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
                         imglabel = img_to_open[1]
                         img_to_open = img_to_open[0]
-
-                    if p >= net.module._num_prototypes // 2:
-                        img_size = args.image_size_ds
-                        softmaxes = proto_features_ds
-                    else:
-                        img_size = args.image_size
-                        softmaxes = proto_features
 
                     image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
                     img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
