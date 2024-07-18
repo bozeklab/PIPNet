@@ -33,9 +33,18 @@ class PIPNet(nn.Module):
         features_ds = self._net(xs_ds)
         proto_features = self._add_on(features)
         proto_features_ds = self._add_on(features_ds)
-        print('!!!')
-        print(proto_features.shape)
-        print(proto_features_ds.shape)
+        B, D, H, W = proto_features.shape
+        _, _, H_ds, W_ds = proto_features_ds.shape
+        p_f_flat = proto_features.view(B, D, -1).permute(0, 2, 1).reshape(-1, D)
+        p_f_ds_flat = proto_features_ds.view(B, D, -1).permute(0, 2, 1).reshape(-1, D)
+        combined = torch.cat([p_f_flat, p_f_ds_flat], dim=0)
+        softmax_combined = F.softmax(combined, dim=1)
+
+        p_f_flat = softmax_combined[:p_f_flat.size(0)]
+        p_f_ds_flat = softmax_combined[p_f_flat.size(0):]
+        proto_features = p_f_flat.view(B, H*W, D).permute(0, 2, 1).view(B, D, H, W)
+        proto_features_ds = p_f_ds_flat.view(B, H_ds*W_ds, D).permute(0, 2, 1).view(B, D, H_ds, W_ds)
+
         pooled = self._pool(proto_features)
         pooled_ds = self._pool(proto_features_ds)
         pooled = torch.cat([pooled, pooled_ds], dim=1)
@@ -92,15 +101,13 @@ def get_network(num_classes: int, args: argparse.Namespace):
     if args.num_features == 0:
         num_prototypes = 2 * first_add_on_layer_in_channels
         print("Number of prototypes: ", num_prototypes, flush=True)
-        add_on_layers = nn.Sequential(
-            nn.Softmax(dim=1), #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1                
-    )
+        add_on_layers = nn.Identity() #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1jghlf
     else:
         num_prototypes = 2 * args.num_features
         print("Number of prototypes set from", first_add_on_layer_in_channels, "to", num_prototypes,". Extra 1x1 conv layer added. Not recommended.", flush=True)
         add_on_layers = nn.Sequential(
-            nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=args.num_features, kernel_size=1, stride = 1, padding=0, bias=True),
-            nn.Softmax(dim=1), #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1                
+            nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=args.num_features, kernel_size=1, stride = 1, padding=0, bias=True)#,
+            #nn.Softmax(dim=1), #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1
     )
     pool_layer = nn.Sequential(
                 nn.AdaptiveMaxPool2d(output_size=(1,1)), #outputs (bs, ps,1,1)
