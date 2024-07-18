@@ -111,9 +111,18 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 outmax = torch.amax(out,dim=1)[0] #shape ([1]) because batch size of projectloader is 1
                                 if outmax.item() == 0.:
                                     abstained+=1
-                            
+
+                            if p >= net.module._num_prototypes // 2:
+                                img_size = args.image_size_ds
+                                softmaxes = proto_features_ds
+                            else:
+                                img_size = args.image_size
+                                softmaxes = proto_features
+
+                            patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
+
                             # Take the max per prototype.                             
-                            max_per_prototype, max_idx_per_prototype = torch.max(out, dim=0)
+                            max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
                             max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
                             max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1) #shape (num_prototypes)
                             
@@ -127,9 +136,9 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
                                     img_to_open = img_to_open[0]
                                 
-                                image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open))
+                                image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open))
                                 img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
-                                h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
+                                h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                         
                                 saved[p]+=1
