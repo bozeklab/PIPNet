@@ -228,10 +228,6 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
         with torch.no_grad():
             proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
 
-        max_per_prototype, max_idx_per_prototype = torch.max(out, dim=0)
-        # In PyTorch, images are represented as [channels, height, width]
-        max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
-        max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
         for p in range(0, net.module._num_prototypes):
             patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
             if p >= net.module._num_prototypes // 2:
@@ -242,6 +238,11 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                 img_size = args.image_size
                 softmaxes = proto_features
                 pidx = p
+
+            max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
+            # In PyTorch, images are represented as [channels, height, width]
+            max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
+            max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
 
             c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
             if c_weight>0:
