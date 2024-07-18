@@ -115,7 +115,6 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             if p >= net.module._num_prototypes // 2:
                                 img_size = args.image_size_ds
                                 softmaxes = proto_features_ds
-                                p -= net.module._num_prototypes
                             else:
                                 img_size = args.image_size
                                 softmaxes = proto_features
