@@ -40,15 +40,15 @@ def eval_pipnet(net,
                         desc=progress_prefix+' %s'%epoch,
                         mininterval=5.,
                         ncols=0)
-    (xs, ys) = next(iter(test_loader))
+    (xs, xs_ds, ys) = next(iter(test_loader))
     # Iterate through the test set
-    for i, (xs, ys) in test_iter:
-        xs, ys = xs.to(device), ys.to(device)
+    for i, (xs, xs_ds, ys) in test_iter:
+        xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
         
         with torch.no_grad():
             net.module._classification.weight.copy_(torch.clamp(net.module._classification.weight.data - 1e-3, min=0.)) 
             # Use the model to classify this batch of input data
-            _, pooled, out = net(xs, inference=True)
+            _, _, pooled, out = net(xs=xs,  inference=True)
             max_out_score, ys_pred = torch.max(out, dim=1)
             ys_pred_scores = torch.amax(F.softmax((torch.log1p(out**net.module._classification.normalization_multiplier)),dim=1),dim=1)
             abstained += (max_out_score.shape[0] - torch.count_nonzero(max_out_score))
