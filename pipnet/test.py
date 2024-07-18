@@ -56,7 +56,6 @@ def eval_pipnet(net,
             sim_scores_anz = torch.count_nonzero(torch.gt(torch.abs(pooled*repeated_weight), 1e-3).float(),dim=2).float()
             local_size = torch.count_nonzero(torch.gt(torch.relu((pooled*repeated_weight)-1e-3).sum(dim=1), 0.).float(),dim=1).float()
             local_size_total += local_size.sum().item()
-
             
             correct_class_sim_scores_anz = torch.diagonal(torch.index_select(sim_scores_anz, dim=0, index=ys_pred),0)
             global_sim_anz += correct_class_sim_scores_anz.sum().item()
