@@ -41,7 +41,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
     imgs = vis_test_set.imgs
     
     last_y = -1
-    for k, (xs, ys) in enumerate(vis_test_loader): #shuffle is false so should lead to same order as in imgs
+    for k, (xs, xs_ds, ys) in enumerate(vis_test_loader): #shuffle is false so should lead to same order as in imgs
         if ys[0] != last_y:
             last_y = ys[0]
             count_per_y = 0
@@ -49,7 +49,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
             count_per_y +=1
             #if count_per_y>5: #show max 5 imgs per class to speed up the process
             #    continue
-        xs, ys = xs.to(device), ys.to(device)
+        xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
         img = imgs[k][0]
         img_name = os.path.splitext(os.path.basename(img))[0]
         dir = os.path.join(save_dir, f"{img_name}_{str(ys[0].item())}")
@@ -58,7 +58,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
             shutil.copy(img, dir)
         
         with torch.no_grad():
-            softmaxes, pooled, out = net(xs=xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
+            proto_features, proto_features_ds, pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
             sorted_out, sorted_out_indices = torch.sort(out.squeeze(0), descending=True)
             for pred_class_idx in sorted_out_indices[:3]:
                 pred_class = classes[pred_class_idx]
@@ -68,28 +68,39 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                 sorted_pooled, sorted_pooled_indices = torch.sort(pooled.squeeze(0), descending=True)
                 simweights = []
                 for prototype_idx in sorted_pooled_indices:
+                    patchsize, skip = get_patch_size(args, prototype_idx, net.module._num_prototypes)
+
+                    if prototype_idx >= net.module._num_prototypes // 2:
+                        img_size = args.image_size_ds
+                        softmaxes = proto_features_ds
+                        pidx = prototype_idx - net.module._num_prototypes // 2
+                    else:
+                        img_size = args.image_size
+                        softmaxes = proto_features
+                        pidx = prototype_idx
+
                     simweight = pooled[0,prototype_idx].item() * net.module._classification.weight[pred_class_idx, prototype_idx].item()
                     simweights.append(simweight)
                     if abs(simweight) > 0.01:
-                        max_h, max_idx_h = torch.max(softmaxes[0, prototype_idx, :, :], dim=0)
+                        max_h, max_idx_h = torch.max(softmaxes[0, pidx, :, :], dim=0)
                         max_w, max_idx_w = torch.max(max_h, dim=0)
                         max_idx_h = max_idx_h[max_idx_w].item()
                         max_idx_w = max_idx_w.item()
-                        image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img))
+                        image = transforms.Resize(size=(img_size, img_size ))(Image.open(img))
                         image = transforms.Grayscale(3)(image)
                         img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
-                        h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, max_idx_h, max_idx_w)
+                        h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size , softmaxes.shape, patchsize, skip, max_idx_h, max_idx_w)
                         img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                         img_patch = transforms.ToPILImage()(img_tensor_patch)
                         img_patch.save(os.path.join(save_path, 'mul%s_p%s_sim%s_w%s_patch.png'%(str(f"{simweight:.3f}"),str(prototype_idx.item()),str(f"{pooled[0,prototype_idx].item():.3f}"),str(f"{net.module._classification.weight[pred_class_idx, prototype_idx].item():.3f}"))))
                         draw = D.Draw(image)
-                        draw.rectangle([(max_idx_w*skip,max_idx_h*skip), (min(args.image_size, max_idx_w*skip+patchsize), min(args.image_size, max_idx_h*skip+patchsize))], outline='yellow', width=2)
+                        draw.rectangle([(max_idx_w*skip,max_idx_h*skip), (min(img_size , max_idx_w*skip+patchsize), min(img_size, max_idx_h*skip+patchsize))], outline='yellow', width=2)
                         image.save(os.path.join(save_path, 'mul%s_p%s_sim%s_w%s_rect.png'%(str(f"{simweight:.3f}"),str(prototype_idx.item()),str(f"{pooled[0,prototype_idx].item():.3f}"),str(f"{net.module._classification.weight[pred_class_idx, prototype_idx].item():.3f}"))))
 
                         # visualise softmaxes as heatmap
                         if use_opencv:
                             softmaxes_resized = transforms.ToPILImage()(softmaxes[0, prototype_idx, :, :])
-                            softmaxes_resized = softmaxes_resized.resize((args.image_size, args.image_size),Image.BICUBIC)
+                            softmaxes_resized = softmaxes_resized.resize((img_size , img_size ),Image.BICUBIC)
                             softmaxes_np = (transforms.ToTensor()(softmaxes_resized)).squeeze().numpy()
 
                             heatmap = cv2.applyColorMap(np.uint8(255*softmaxes_np), cv2.COLORMAP_JET)
