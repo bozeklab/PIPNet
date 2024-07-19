@@ -33,10 +33,12 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
     normalize = transforms.Normalize(mean=mean,std=std)
     transform_no_augment = transforms.Compose([
                             transforms.Resize(size=(args.image_size, args.image_size)),
+                            transforms.Grayscale(3),
                             transforms.ToTensor(),
                             normalize])
     transform_no_augment_ds = transforms.Compose([
                             transforms.Resize(size=(args.image_size_ds, args.image_size_ds)),
+                            transforms.Grayscale(3),
                             transforms.ToTensor(),
                             normalize])
 
@@ -92,7 +94,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                         max_w, max_idx_w = torch.max(max_h, dim=0)
                         max_idx_h = max_idx_h[max_idx_w].item()
                         max_idx_w = max_idx_w.item()
-                        image = transforms.Resize(size=(img_size, img_size ))(Image.open(img))
+                        image = transforms.Resize(size=(img_size, img_size))(Image.open(img))
                         image = transforms.Grayscale(3)(image)
                         img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                         h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size , softmaxes.shape, patchsize, skip, max_idx_h, max_idx_w)
