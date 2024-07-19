@@ -170,7 +170,7 @@ def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transf
         subset_targets = list(np.array(targets)[train_indices])
         train_indices, test_indices = train_test_split(train_indices, test_size=validation_size,
                                                        stratify=subset_targets, random_state=seed)
-        testset = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transform_no_augment),
+        testset = torch.utils.data.Subset(DualTransformImageFolder(train_dir, transform1=transform_no_augment, transform2=transform_no_augment_ds),
                                           indices=test_indices)
         print("Samples in trainset:", len(indices), "of which", len(train_indices), "for training and ",
               len(test_indices), "for testing.", flush=True)

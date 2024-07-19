@@ -2,6 +2,8 @@ import os, shutil
 import argparse
 from PIL import Image, ImageDraw as D
 import torchvision
+
+from util.data import DualTransformImageFolder
 from util.func import get_patch_size
 from torchvision import transforms
 import torch
@@ -33,11 +35,15 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                             transforms.Resize(size=(args.image_size, args.image_size)),
                             transforms.ToTensor(),
                             normalize])
+    transform_no_augment_ds = transforms.Compose([
+                            transforms.Resize(size=(args.image_size_ds, args.image_size_ds)),
+                            transforms.ToTensor(),
+                            normalize])
 
-    vis_test_set = torchvision.datasets.ImageFolder(vis_test_dir, transform=transform_no_augment)
+    vis_test_set = DualTransformImageFolder(vis_test_dir, transform1=transform_no_augment, transform2=transform_no_augment_ds)
     vis_test_loader = torch.utils.data.DataLoader(vis_test_set, batch_size = 1,
-                                                shuffle=False, pin_memory=not args.disable_cuda and torch.cuda.is_available(),
-                                                num_workers=num_workers)
+                                                  shuffle=False, pin_memory=not args.disable_cuda and torch.cuda.is_available(),
+                                                  num_workers=num_workers)
     imgs = vis_test_set.imgs
     
     last_y = -1
