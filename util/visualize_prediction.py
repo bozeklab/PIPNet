@@ -107,7 +107,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
 
                         # visualise softmaxes as heatmap
                         if use_opencv:
-                            softmaxes_resized = transforms.ToPILImage()(softmaxes[0, prototype_idx, :, :])
+                            softmaxes_resized = transforms.ToPILImage()(softmaxes[0, pidx, :, :])
                             softmaxes_resized = softmaxes_resized.resize((img_size , img_size ),Image.BICUBIC)
                             softmaxes_np = (transforms.ToTensor()(softmaxes_resized)).squeeze().numpy()
 
