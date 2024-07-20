@@ -471,10 +471,9 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
 
 class RandomHorizontalFlip(transforms.RandomHorizontalFlip):
     def forward(self, img):
-        if torch.rand(1) < 0.5:
+        if torch.rand(1) < 0.0:
             return F.hflip(img), True
         return img, False
-
 
 # function copied from https://pytorch.org/vision/stable/_modules/torchvision/transforms/autoaugment.html#TrivialAugmentWide (v0.12) and adapted
 class TrivialAugmentWideNoColor(transforms.TrivialAugmentWide):
