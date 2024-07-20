@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 
 def run_pipnet(args=None):
-
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     random.seed(args.seed)
