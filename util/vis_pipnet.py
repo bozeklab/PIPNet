@@ -48,7 +48,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     images_seen = 0
     topks = dict()
     # Iterate through the training set
-    for i, (xs, xs_ds, ys) in img_iter:
+    for i, (xs, xs_ds, m, m_ds, ys) in img_iter:
         images_seen+=1
         xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
 
@@ -98,7 +98,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                     mininterval=50.,
                     desc='Visualizing topk',
                     ncols=0)
-    for i, (xs, xs_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
+    for i, (xs, xs_ds, m, m_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
         if i in alli:
             xs, ys = xs.to(device), ys.to(device)
             for p in topks.keys():
@@ -218,7 +218,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
 
     # Iterate through the data
     images_seen_before = 0
-    for i, (xs, xs_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
+    for i, (xs, xs_ds, m, m_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
         if i % skip_img == 0:
             images_seen_before+=xs.shape[0]
             continue

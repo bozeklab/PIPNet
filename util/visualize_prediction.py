@@ -49,7 +49,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
     imgs = vis_test_set.imgs
     
     last_y = -1
-    for k, (xs, xs_ds, ys) in enumerate(vis_test_loader): #shuffle is false so should lead to same order as in imgs
+    for k, (xs, xs_ds, m, m_ds, ys) in enumerate(vis_test_loader): #shuffle is false so should lead to same order as in imgs
         if ys[0] != last_y:
             last_y = ys[0]
             count_per_y = 0

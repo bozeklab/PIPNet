@@ -434,11 +434,25 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
 
     def __getitem__(self, index):
         path, target = self.imgs[index]
-        sample = self.loader(path)
-        sample1 = self.transform1(sample)
-        sample2 = self.transform2(sample)
 
-        return sample1, sample2, target
+        mask_image_path = os.path.join(os.path.dirname(path), 'mask_' + os.path.basename(path))
+        mask = Image.open(mask_image_path).convert('RGB')
+
+        mask_array = np.array(mask)
+        mask_array[mask_array != 0] = 255
+        mask = Image.fromarray(mask_array)
+
+        sample = self.loader(path)
+        st1 = torch.get_rng_state()
+        sample1 = self.transform1(sample)
+        torch.set_rng_state(st1)
+        mask1 = self.transform1(mask)
+        st2 = torch.get_rng_state()
+        sample2 = self.transform2(sample)
+        torch.set_rng_state(st2)
+        mask2 = self.transform1(mask)
+
+        return sample1, sample2, mask1, mask2, target
 
     def __len__(self):
         return len(self.imgs)
@@ -505,7 +519,6 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         return im1, im2, m2, im1_ds, im2_ds, m2_ds, hflip1, hflip2, target
 
     def __len__(self):
-        print('!ff!!')
         return len(self.imgs)
 
 
