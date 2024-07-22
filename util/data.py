@@ -10,6 +10,9 @@ import torchvision.transforms as transforms
 from typing import Tuple, Dict
 import torchvision.transforms.functional as F
 from torch import Tensor
+from torchvision.datasets import ImageFolder
+from torchvision.datasets.folder import default_loader, IMG_EXTENSIONS
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 import random
 from sklearn.model_selection import train_test_split
 
@@ -157,7 +160,7 @@ def get_dataloaders(args: argparse.Namespace, device):
 def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transform_no_augment, transform_no_augment_ds,
                     num_channels: int, train_dir: str, project_dir: str, test_dir: str, seed: int,
                     validation_size: float, train_dir_pretrain=None, test_dir_projection=None, transform1p=None):
-    trainvalset = torchvision.datasets.ImageFolder(train_dir)
+    trainvalset = ImageFolder(train_dir, is_valid_file=is_valid_file)
     classes = trainvalset.classes
     targets = trainvalset.targets
     indices = list(range(len(trainvalset)))
@@ -417,6 +420,10 @@ def get_grayscale(augment: bool, train_dir: str, project_dir: str, test_dir: str
                            train_dir, project_dir, test_dir, seed, validation_size)
 
 
+def is_valid_file(path: str) -> bool:
+    return path.lower().endswith(IMG_EXTENSIONS) and 'mask' not in os.path.basename(path).lower()
+
+
 class DualTransformImageFolder(torchvision.datasets.ImageFolder):
     def __init__(self, root, transform1, transform2,  loader=Image.open,
                  is_valid_file=None):
@@ -498,6 +505,7 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         return im1, im2, m2, im1_ds, im2_ds, m2_ds, hflip1, hflip2, target
 
     def __len__(self):
+        print('!ff!!')
         return len(self.imgs)
 
 
