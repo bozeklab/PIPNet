@@ -448,7 +448,7 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         # Filter image files to exclude those with 'mask' in their names
 
         if type(dataset) == torchvision.datasets.folder.ImageFolder:
-            self.imgs = dataset._image_files
+            self.imgs = dataset.imgs
             self.targets = dataset.targets
         else:
             self.targets = dataset._labels
