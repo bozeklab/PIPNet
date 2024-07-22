@@ -444,13 +444,13 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         self.dataset = dataset
         self.classes = dataset.classes
         self.flip = RandomHorizontalFlip()
+        self.imgs = [img for img in self.imgs if "mask" not in img[0]]
         if type(dataset) == torchvision.datasets.folder.ImageFolder:
             self.imgs = dataset.imgs
             self.targets = dataset.targets
         else:
             self.targets = dataset._labels
             self.imgs = list(zip(dataset._image_files, dataset._labels))
-        self.imgs = [img for img in self.imgs if "mask" not in img[0]]
         self.transform1 = transform1
         self.transform2 = transform2
         self.transform3 = transform3
