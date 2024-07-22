@@ -148,13 +148,13 @@ def main():
                              os.path.join(root_dir, 'train'),
                              os.path.join(root_dir, 'test'), image_size, image_size_ds, seed, validation_size)
 
+    print(len(trainset))
     for idx in range(len(trainset)):
         xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys = trainset[idx]
-
-        display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds)
-
-        if idx >= 15:
-            break
+        print(idx)
+        #display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds)
+        #if idx >= 15:
+        #    break
 
 
 if __name__ == "__main__":

@@ -491,7 +491,7 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         return im1, im2, m2, im1_ds, im2_ds, m2_ds, hflip1, hflip2, target
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.imgs)
 
 
 class RandomHorizontalFlip(transforms.RandomHorizontalFlip):
