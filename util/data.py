@@ -1,6 +1,7 @@
 import numpy as np
 import argparse
 import torch
+import os
 import torch.optim
 import torch.utils.data
 from PIL import Image
@@ -445,25 +446,49 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         else:
             self.targets = dataset._labels
             self.imgs = list(zip(dataset._image_files, dataset._labels))
+        self.imgs = [img for img in self.imgs if "mask" not in img]
         self.transform1 = transform1
         self.transform2 = transform2
         self.transform3 = transform3
         self.transform4 = transform4
 
     def __getitem__(self, index):
-        image, target = self.dataset[index]
+        image_path, target = self.imgs[index]
+        image = Image.open(image_path).convert('RGB')
+        mask_image_path = os.path.join(os.path.dirname(image_path), 'mask_' + os.path.basename(image_path))
+        mask = Image.open(mask_image_path).convert('RGB')
+
+        mask_array = np.array(mask)
+        mask_array[mask_array != 0] = 255
+        mask = Image.fromarray(mask_array)
+
         image_ = image.copy()
+        mask_ = mask.copy()
+        st1 = torch.get_rng_state()
         image = self.transform1(image)
         im1 = self.transform2(image)
         im2 = self.transform2(image)
         im2, hflip1 = self.flip(im2)
 
+        torch.set_rng_state(st1)
+        mask = self.transform1(mask)
+        m1 = self.transform2(mask)
+        m2 = self.transform2(mask)
+        m2, _ = self.flip(m2)
+
+        st2 = torch.get_rng_state()
         image_ds = self.transform3(image_)
         im1_ds = self.transform4(image_ds)
         im2_ds = self.transform4(image_ds)
         im2_ds, hflip2 = self.flip(im2_ds)
 
-        return im1, im2, im1_ds, im2_ds, hflip1, hflip2, target
+        torch.set_rng_state(st2)
+        mask_ds = self.transform3(mask_)
+        m1_ds = self.transform4(mask_ds)
+        m2_ds = self.transform4(mask_ds)
+        m2_ds, _ = self.flip(m2_ds)
+
+        return im1, im2, m2, im1_ds, im2_ds, m2_ds, hflip1, hflip2, target
 
     def __len__(self):
         return len(self.dataset)
@@ -471,7 +496,7 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
 
 class RandomHorizontalFlip(transforms.RandomHorizontalFlip):
     def forward(self, img):
-        if torch.rand(1) < 0.0:
+        if torch.rand(1) < 0.5:
             return F.hflip(img), True
         return img, False
 

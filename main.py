@@ -123,7 +123,7 @@ def run_pipnet(args=None):
 
     # Forward one batch through the backbone to get the latent output size
     with torch.no_grad():
-        xs1, xs2, xs1_ds, xs2_ds, hflip1, hflip2, ys = next(iter(trainloader))
+        xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys = next(iter(trainloader))
         xs1 = xs1.to(device)
         xs1_ds = xs1_ds.to(device)
         proto_features, proto_features_ds, _, _ = net(xs1, xs1_ds)

@@ -48,14 +48,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         unif_weight = 0.
         cl_weight = 2.
 
-    
     print("Align weight: ", align_pf_weight, ", U_tanh weight: ", t_weight, "Class weight:", cl_weight, flush=True)
     print("Pretrain?", pretrain, "Finetune?", finetune, flush=True)
     
     lrs_net = []
     lrs_class = []
     # Iterate through the data set to update leaves, prototypes and network
-    for i, (xs1, xs2, xs1_ds, xs2_ds, hflip1, hflip2, ys) in train_iter:
+    for i, (xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
         
         xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
