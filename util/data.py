@@ -446,8 +446,7 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         else:
             self.targets = dataset._labels
             self.imgs = list(zip(dataset._image_files, dataset._labels))
-        self.imgs = [img for img in self.imgs if "mask" not in img]
-        print(self.imgs)
+        self.imgs = [img for img in self.imgs if "mask" not in img[0]]
         self.transform1 = transform1
         self.transform2 = transform2
         self.transform3 = transform3
