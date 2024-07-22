@@ -446,15 +446,14 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         self.flip = RandomHorizontalFlip()
 
         # Filter image files to exclude those with 'mask' in their names
-        _image_files = [img for img in dataset.samples if "mask" not in img[0]]
 
-        if isinstance(dataset, datasets.ImageFolder):
-            self.imgs = _image_files
-            self.targets = [dataset.class_to_idx[os.path.basename(os.path.dirname(img[0]))] for img in _image_files]
-        else:
+        if type(dataset) == torchvision.datasets.folder.ImageFolder:
+            self.imgs = dataset._image_files
             self.targets = dataset.targets
-            self.imgs = list(zip(_image_files, dataset.targets))
-
+        else:
+            self.targets = dataset._labels
+            self.imgs = list(zip(dataset._image_files, dataset._labels))
+        self.imgs = [img for img in dataset.samples if "mask" not in img[0]]
         self.transform1 = transform1
         self.transform2 = transform2
         self.transform3 = transform3
