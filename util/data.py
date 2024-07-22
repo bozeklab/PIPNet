@@ -423,14 +423,18 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
         super(DualTransformImageFolder, self).__init__(root, transform1, transform2, loader, is_valid_file)
         self.transform1 = transform1
         self.transform2 = transform2
+        self.imgs = [img for img in self.imgs if "mask" not in img[0]]
 
     def __getitem__(self, index):
-        path, target = self.samples[index]
+        path, target = self.imgs[index]
         sample = self.loader(path)
         sample1 = self.transform1(sample)
         sample2 = self.transform2(sample)
 
         return sample1, sample2, target
+
+    def __len__(self):
+        return len(self.imgs)
 
 
 class FourAugSupervisedDataset(torch.utils.data.Dataset):
