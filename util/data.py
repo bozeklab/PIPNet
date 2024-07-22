@@ -450,7 +450,7 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
         st2 = torch.get_rng_state()
         sample2 = self.transform2(sample)
         torch.set_rng_state(st2)
-        mask2 = self.transform1(mask)
+        mask2 = self.transform2(mask)
 
         return sample1, sample2, mask1, mask2, target
 

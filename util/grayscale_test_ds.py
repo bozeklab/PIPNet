@@ -141,6 +141,10 @@ def main():
     for idx in range(len(testset)):
         xs, xs_ds, m, m_ds, ys = testset[idx]
         print(idx)
+        print(xs.shape)
+        print(xs_ds.shape)
+        print(m.shape)
+        print(m_ds.shape)
         display_tensor_images(xs, xs_ds, m, m_ds)
         #if idx >= 15:
         #    break
