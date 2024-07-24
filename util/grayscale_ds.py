@@ -148,7 +148,7 @@ def main():
                              os.path.join(root_dir, 'train'),
                              os.path.join(root_dir, 'test'), image_size, image_size_ds, seed, validation_size)
 
-    print(len(trainset))
+    imgs = trainset.dataset.imgs
     for idx in range(len(trainset)):
         xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys = trainset[idx]
         print(idx)

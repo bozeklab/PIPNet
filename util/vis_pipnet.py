@@ -32,6 +32,15 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         tensors_per_prototype[p]=[]
 
     imgs = projectloader.dataset.imgs
+    masks = []
+    for m in masks:
+        mask_path, target = m
+        directory, filename = os.path.split(mask_path)
+        name, extension = os.path.splitext(filename)
+        new_maskname = 'mask_' + name + extension
+        new_mask_path = os.path.join(directory, new_maskname)
+        masks.append((new_mask_path, target))
+
     
     # Make sure the model is in evaluation mode
     net.eval()
@@ -50,7 +59,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     # Iterate through the training set
     for i, (xs, xs_ds, m, m_ds, ys) in img_iter:
         images_seen+=1
-        xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
+        xs, xs_ds, m, m_ds, ys = xs.to(device), xs_ds.to(device), m.to(device), m_ds.to(device),  ys.to(device)
 
         with torch.no_grad():
             # Use the model to classify this batch of input data
@@ -135,14 +144,26 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 w_idx = max_idx_per_prototype_w[pidx]
                                 
                                 img_to_open = imgs[i]
+                                mask_to_open = masks[i]
                                 if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
                                     img_to_open = img_to_open[0]
                                 
                                 image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open))
+                                mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open))
+
                                 img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
+                                msk_tensor = transforms.ToTensor()(mask).unsqueeze_(0)
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                                        
+                                msk_tensor_patch = msk_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
+                                white_pixel_value = torch.tensor([255, 255, 255], dtype=torch.uint8).device('cuda')
+                                mask = torch.all(msk_tensor_patch == white_pixel_value, dim=-1)
+                                num_white_pixels = torch.sum(mask).item()
+                                print(num_white_pixels)
+
+                                # Count the number of white pixels
+                                num_white_pixels = torch.sum(mask).item()
+
                                 saved[p]+=1
                                 tensors_per_prototype[p].append(img_tensor_patch)
 
