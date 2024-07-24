@@ -33,7 +33,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
     imgs = projectloader.dataset.imgs
     masks = []
-    for m in masks:
+    for i in imgs:
         mask_path, target = m
         directory, filename = os.path.split(mask_path)
         name, extension = os.path.splitext(filename)
