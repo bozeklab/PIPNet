@@ -160,6 +160,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 msk_tensor_patch = msk_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 white_pixel_value = torch.tensor([255, 255, 255], dtype=torch.uint8).to('cuda')
+                                print((msk_tensor_patch == white_pixel_value).shape)
                                 mask = torch.all(msk_tensor_patch == white_pixel_value, dim=-1)
                                 num_white_pixels = torch.sum(mask).item()
                                 print(p, num_white_pixels)
