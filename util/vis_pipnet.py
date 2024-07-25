@@ -147,6 +147,9 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 mask_to_open = masks[i]
                                 if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
                                     img_to_open = img_to_open[0]
+
+                                if isinstance(mask_to_open, tuple) or isinstance(mask_to_open, list): #dataset contains tuples of (img,label)
+                                    mask_to_open = mask_to_open[0]
                                 
                                 image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open))
                                 mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open))
