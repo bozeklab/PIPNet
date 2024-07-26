@@ -161,7 +161,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 msk_tensor_patch = msk_tensor[0, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 mask = torch.all(msk_tensor_patch == 1, dim=0)
                                 num_white_pixels = torch.sum(mask).item()
-                                print(p, num_white_pixels)
+                                print(msk_tensor_patch.shape)
+                                print(p, num_white_pixels, h_coor_min, h_coor_max, w_coor_min, w_coor_max)
 
                                 # Count the number of white pixels
                                 num_white_pixels = torch.sum(mask).item()
