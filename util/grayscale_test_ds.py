@@ -80,6 +80,9 @@ def display_tensor_images(xs, xs_ds, m, m_ds):
     m = m.cpu().numpy()
     m_ds = m_ds.cpu().numpy()
 
+    m = m * 255
+    m_ds = m_ds * 255
+
     # Transpose the arrays from [C, H, W] to [H, W, C]
     image = np.transpose(xs, (1, 2, 0))
     image_ds = np.transpose(xs_ds, (1, 2, 0))
@@ -89,11 +92,6 @@ def display_tensor_images(xs, xs_ds, m, m_ds):
     # Denormalize if necessary (assuming the images were normalized to [-1, 1])
     image = (image - image.min()) / (image.max() - image.min())
     image = (image * 255).astype(np.uint8)
-
-    m = (m - m.min()) / (m.max() - m.min())
-    m = (m * 255).astype(np.uint8)
-    m_ds = (m_ds - m_ds.min()) / (m_ds.max() - m_ds.min())
-    m_ds = (m_ds * 255).astype(np.uint8)
 
     image_ds = (image_ds - image_ds.min()) / (image_ds.max() - image_ds.min())
     image_ds = (image_ds * 255).astype(np.uint8)
@@ -116,12 +114,11 @@ def display_tensor_images(xs, xs_ds, m, m_ds):
 
     axes[2].imshow(m, cmap='gray')
     axes[2].axis('off')  # Turn off axis labels
-    axes[2].set_title('xs1_ds')
+    axes[2].set_title('mask')
 
     axes[3].imshow(m_ds, cmap='gray')
     axes[3].axis('off')  # Turn off axis labels
-    axes[3].set_title('xs2_ds')
-
+    axes[3].set_title('mask_ds')
 
     plt.show()
 
@@ -137,14 +134,13 @@ def main():
                              os.path.join(root_dir, 'train'),
                              os.path.join(root_dir, 'test'), image_size, image_size_ds, seed, validation_size)
 
-    print(len(testset))
+    print(len(projectset))
     for idx in range(len(testset)):
         xs, xs_ds, m, m_ds, ys = testset[idx]
         print(idx)
         print(xs.shape)
         print(xs_ds.shape)
-        print(m.shape)
-        print(m_ds.shape)
+
         display_tensor_images(xs, xs_ds, m, m_ds)
         #if idx >= 15:
         #    break

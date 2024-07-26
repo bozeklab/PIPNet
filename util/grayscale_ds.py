@@ -94,10 +94,8 @@ def display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds):
     image1 = (image1 - image1.min()) / (image1.max() - image1.min())
     image1 = (image1 * 255).astype(np.uint8)
 
-    m2 = (m2 - m2.min()) / (m2.max() - m2.min())
-    m2 = (m2 * 255).astype(np.uint8)
-    m2_ds = (m2_ds - m2_ds.min()) / (m2_ds.max() - m2_ds.min())
-    m2_ds = (m2_ds * 255).astype(np.uint8)
+    m2 = m2 * 255
+    m2_ds = m2_ds * 255
 
     image1_ds = (image1_ds - image1_ds.min()) / (image1_ds.max() - image1_ds.min())
     image1_ds = (image1_ds * 255).astype(np.uint8)

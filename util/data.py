@@ -452,7 +452,19 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
         torch.set_rng_state(st2)
         mask2 = self.transform2(mask)
 
-        return sample1, sample2, mask1, mask2, target
+        masks = []
+        for mask in [mask1, mask2]:
+            mask = mask.numpy()
+            mask = (mask - mask.min()) / (mask.max() - mask.min())
+            mask = (mask * 255).astype(np.uint8)
+            max_val = np.max(mask)
+            min_val = np.min(mask)
+            max_mask = (mask == max_val)
+            min_mask = (mask == min_val)
+            bool_mask = (max_mask | ~min_mask)
+            masks.append(torch.tensor(bool_mask))
+
+        return sample1, sample2, masks[0], masks[1], target
 
     def __len__(self):
         return len(self.imgs)
@@ -516,7 +528,20 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
         m2_ds = self.transform4(mask_ds)
         m2_ds, _ = self.flip(m2_ds)
 
-        return im1, im2, m2, im1_ds, im2_ds, m2_ds, hflip1, hflip2, target
+        masks = []
+        for mask in [m2, m2_ds]:
+            mask = mask.numpy()
+            mask = (mask - mask.min()) / (mask.max() - mask.min())
+            mask = (mask * 255).astype(np.uint8)
+            max_val = np.max(mask)
+            min_val = np.min(mask)
+            max_mask = (mask == max_val)
+            min_mask = (mask == min_val)
+            bool_mask = (max_mask | ~min_mask)
+            masks.append(torch.tensor(bool_mask))
+
+
+        return im1, im2, masks[0], im1_ds, im2_ds, masks[1], hflip1, hflip2, target
 
     def __len__(self):
         return len(self.imgs)
