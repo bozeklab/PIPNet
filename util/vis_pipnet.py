@@ -164,7 +164,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 print(p, num_white_pixels, h_coor_min, h_coor_max, w_coor_min, w_coor_max)
 
                                 # Count the number of white pixels
-                                num_white_pixels = torch.sum(mask).item()
+                                #num_white_pixels = torch.sum(mask).item()
 
                                 saved[p]+=1
                                 tensors_per_prototype[p].append(img_tensor_patch)
