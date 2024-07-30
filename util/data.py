@@ -424,6 +424,18 @@ def is_valid_file(path: str) -> bool:
     return path.lower().endswith(IMG_EXTENSIONS) and 'mask' not in os.path.basename(path).lower()
 
 
+def create_boolean_mask(mask_img):
+    mask = mask_img.numpy()
+    mask = (mask - mask.min()) / (mask.max() - mask.min())
+    mask = (mask * 255).astype(np.uint8)
+    max_val = np.max(mask)
+    min_val = np.min(mask)
+    max_mask = (mask == max_val)
+    min_mask = (mask == min_val)
+    bool_mask = (max_mask | ~min_mask)
+    return torch.tensor(bool_mask)
+
+
 class DualTransformImageFolder(torchvision.datasets.ImageFolder):
     def __init__(self, root, transform1, transform2,  loader=Image.open,
                  is_valid_file=None):
@@ -454,15 +466,8 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
 
         masks = []
         for mask in [mask1, mask2]:
-            mask = mask.numpy()
-            mask = (mask - mask.min()) / (mask.max() - mask.min())
-            mask = (mask * 255).astype(np.uint8)
-            max_val = np.max(mask)
-            min_val = np.min(mask)
-            max_mask = (mask == max_val)
-            min_mask = (mask == min_val)
-            bool_mask = (max_mask | ~min_mask)
-            masks.append(torch.tensor(bool_mask))
+            bool_mask = create_boolean_mask(mask)
+            masks.append(bool_mask)
 
         return sample1, sample2, masks[0], masks[1], target
 
@@ -530,16 +535,8 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
 
         masks = []
         for mask in [m2, m2_ds]:
-            mask = mask.numpy()
-            mask = (mask - mask.min()) / (mask.max() - mask.min())
-            mask = (mask * 255).astype(np.uint8)
-            max_val = np.max(mask)
-            min_val = np.min(mask)
-            max_mask = (mask == max_val)
-            min_mask = (mask == min_val)
-            bool_mask = (max_mask | ~min_mask)
-            masks.append(torch.tensor(bool_mask))
-
+            bool_mask = create_boolean_mask(mask)
+            masks.append(bool_mask)
 
         return im1, im2, masks[0], im1_ds, im2_ds, masks[1], hflip1, hflip2, target
 

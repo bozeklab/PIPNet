@@ -7,6 +7,8 @@ import os
 from PIL import Image, ImageDraw as D
 import torchvision.transforms as transforms
 import torchvision
+
+from util.data import create_boolean_mask
 from util.func import get_patch_size
 import random
 
@@ -156,6 +158,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
                                 img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                                 msk_tensor = transforms.ToTensor()(mask).unsqueeze_(0)
+                                msk_tensor = create_boolean_mask(msk_tensor)
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 msk_tensor_patch = msk_tensor[0, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
