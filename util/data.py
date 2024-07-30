@@ -425,6 +425,7 @@ def is_valid_file(path: str) -> bool:
 
 
 def create_boolean_mask(mask_img):
+    mask_img = F.rgb_to_grayscale(mask_img).squeeze()
     mask = mask_img.numpy()
     mask = (mask - mask.min()) / (mask.max() - mask.min())
     mask = (mask * 255).astype(np.uint8)
@@ -468,6 +469,7 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
         for mask in [mask1, mask2]:
             bool_mask = create_boolean_mask(mask)
             masks.append(bool_mask)
+
 
         return sample1, sample2, masks[0], masks[1], target
 
