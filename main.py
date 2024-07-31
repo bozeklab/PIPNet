@@ -171,9 +171,9 @@ def run_pipnet(args=None):
         net.eval()
         torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_pretrained'))
         net.train()
-    with torch.no_grad():
-        if 'convnext' in args.net and args.epochs_pretrain > 0:
-            topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_pretrained_prototypes_topk', args)
+    #with torch.no_grad():
+    #    if 'convnext' in args.net and args.epochs_pretrain > 0:
+    #        topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_pretrained_prototypes_topk', args)
         
     # SECOND TRAINING PHASE
     # re-initialize optimizers and schedulers for second training phase
