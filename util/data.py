@@ -425,7 +425,12 @@ def is_valid_file(path: str) -> bool:
 
 
 def create_boolean_mask(mask_img):
-    mask_img = F.rgb_to_grayscale(mask_img).squeeze()
+    mask_img = F.rgb_to_grayscale(mask_img)
+    m_shape = mask_img.shape
+    if len(m_shape) == 3:
+        mask_img=mask_img.squeeze()
+    else:
+        mask_img=mask_img[:, 0, :, :]
     mask = mask_img.numpy()
     mask = (mask - mask.min()) / (mask.max() - mask.min())
     mask = (mask * 255).astype(np.uint8)

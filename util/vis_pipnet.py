@@ -162,12 +162,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 msk_tensor_patch = msk_tensor[0, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                                print('!!!')
-                                print(msk_tensor.shape)
-                                print(img_tensor.shape)
                                 num_white_pixels = torch.sum(msk_tensor_patch).item()
-                                print(msk_tensor_patch.shape)
-                                print(p, num_white_pixels, h_coor_min, h_coor_max, w_coor_min, w_coor_max)
 
                                 # Count the number of white pixels
                                 #num_white_pixels = torch.sum(mask).item()
@@ -225,6 +220,14 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
         tensors_per_prototype[p]=[]
 
     imgs = projectloader.dataset.imgs
+    masks = []
+    for i in imgs:
+        mask_path, target = i
+        directory, filename = os.path.split(mask_path)
+        name, extension = os.path.splitext(filename)
+        new_maskname = 'mask_' + name + extension
+        new_mask_path = os.path.join(directory, new_maskname)
+        masks.append((new_mask_path, target))
     
     # skip some images for visualisation to speed up the process
     if len(imgs)/num_classes <10:
@@ -252,7 +255,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
             images_seen_before+=xs.shape[0]
             continue
         
-        xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
+        xs, xs_ds, m, m_ds, ys = xs.to(device), xs_ds.to(device), m.to(device), m_ds.to(device), ys.to(device)
         # Use the model to classify this batch of input data
         with torch.no_grad():
             proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
@@ -291,22 +294,36 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                
                 if found_max > 0.5:
                     img_to_open = imgs[images_seen_before+idx_to_select]
+                    mask_to_open = masks[images_seen_before+idx_to_select]
+
                     if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
                         imglabel = img_to_open[1]
                         img_to_open = img_to_open[0]
 
+                    if isinstance(mask_to_open, tuple) or isinstance(mask_to_open, list):  # dataset contains tuples of (img,label)
+                        mask_to_open = mask_to_open[0]
+
                     image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
+                    mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open))
+                    msk_tensor = transforms.ToTensor()(mask).unsqueeze_(0)
                     img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                     h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                     img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
+                    msk_tensor_patch = msk_tensor[0, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
-                    
+
+                    num_white_pixels = torch.sum(msk_tensor_patch).item()
+                    if num_white_pixels >= 50:
+                        boundary_color = "red"
+                    else:
+                        boundary_color = "yellow"
+
                     save_path = os.path.join(dir, "prototype_%s")%str(p)
                     if not os.path.exists(save_path):
                         os.makedirs(save_path)
                     draw = D.Draw(image)
-                    draw.rectangle([(w_coor_min,h_coor_min), (w_coor_max, h_coor_max)], outline='yellow', width=2)
+                    draw.rectangle([(w_coor_min,h_coor_min), (w_coor_max, h_coor_max)], outline=boundary_color, width=2)
                     image.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
 
         images_seen_before+=len(ys)

@@ -268,7 +268,8 @@ def run_pipnet(args=None):
     net.eval()
     torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained_last'))
 
-    topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
+    #topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
+    topks = dict()
     # set weights of prototypes that are never really found in projection set to 0
     set_to_zero = []
     if topks:
