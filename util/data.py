@@ -509,7 +509,6 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         image_path, target = self.imgs[index]
-        print(image_path)
         image = Image.open(image_path).convert('RGB')
         mask_image_path = os.path.join(os.path.dirname(image_path), 'mask_' + os.path.basename(image_path))
         mask = Image.open(mask_image_path).convert('RGB')
