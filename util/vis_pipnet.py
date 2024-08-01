@@ -326,6 +326,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     save_path = os.path.join(dir, "prototype_%s")%str(p)
                     if not os.path.exists(save_path):
                         os.makedirs(save_path)
+                    image = Image.alpha_composite(image, mask)
                     draw = D.Draw(image)
                     draw.rectangle([(w_coor_min,h_coor_min), (w_coor_max, h_coor_max)], outline=boundary_color, width=2)
                     image.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
