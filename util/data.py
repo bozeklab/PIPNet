@@ -433,7 +433,7 @@ def create_boolean_mask(mask_img):
         mask_img=mask_img[:, 0, :, :]
     mask = mask_img.numpy()
     if mask.max() - mask.min() < 0.0001:
-        return torch.zeros(m_shape).bool()
+        return torch.zeros(mask_img).bool()
 
     mask = (mask - mask.min()) / (mask.max() - mask.min())
     mask = (mask * 255).astype(np.uint8)
@@ -477,7 +477,6 @@ class DualTransformImageFolder(torchvision.datasets.ImageFolder):
         for mask in [mask1, mask2]:
             bool_mask = create_boolean_mask(mask)
             masks.append(bool_mask)
-
 
         return sample1, sample2, masks[0], masks[1], target
 
