@@ -433,7 +433,7 @@ def create_boolean_mask(mask_img):
         mask_img=mask_img[:, 0, :, :]
     mask = mask_img.numpy()
     if mask.max() - mask.min() < 0.0001:
-        return torch.zeros(mask_img).bool()
+        return torch.zeros(mask_img.shape).bool()
 
     mask = (mask - mask.min()) / (mask.max() - mask.min())
     mask = (mask * 255).astype(np.uint8)
