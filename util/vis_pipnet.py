@@ -307,7 +307,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                         mask_to_open = mask_to_open[0]
 
                     image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
-                    mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open))
+                    mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open).convert("RGB"))
                     msk_tensor = transforms.ToTensor()(mask)
                     img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                     h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
