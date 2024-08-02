@@ -41,9 +41,9 @@ def get_data(args: argparse.Namespace):
         return get_grayscale(True, './data/train', './data/train', './data/test', args.image_size, args.seed,
                              args.validation_size)
     if args.dataset == 'grayscale_mito':
-        return get_grayscale(True, '/data/pwojcik/mito_work/dataset/train',
-                             '/data/pwojcik/mito_work/dataset/train',
-                             '/data/pwojcik/mito_work/dataset/test', args.image_size, args.image_size_ds,
+        return get_grayscale(True, '/data/pwojcik/mito_work/dataset_512/train',
+                             '/data/pwojcik/mito_work/dataset_512/train',
+                             '/data/pwojcik/mito_work/dataset_512/test', args.image_size, args.image_size_ds,
                              args.seed,
                              args.validation_size)
     raise Exception(f'Could not load data set, data set "{args.dataset}" not found!')
