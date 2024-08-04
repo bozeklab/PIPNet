@@ -327,7 +327,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     save_path = os.path.join(dir, "prototype_%s")%str(p)
                     if not os.path.exists(save_path):
                         os.makedirs(save_path)
-                    img_tensor = img_tensor[0] * 255
+                    img_tensor = (img_tensor[0] * 255).int()
                     output = Image.fromarray((img_tensor.numpy() * (0.6 * msk_tensor.numpy() + 0.4)).astype(np.uint8))
                     draw = D.Draw(output)
                     draw.rectangle([(w_coor_min, h_coor_min), (w_coor_max, h_coor_max)], outline=boundary_color, width=2)
