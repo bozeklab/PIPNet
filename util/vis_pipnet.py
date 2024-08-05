@@ -334,7 +334,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     output = Image.fromarray(np.squeeze(output).transpose(1, 2, 0))
                     draw = D.Draw(output)
                     draw.rectangle([(w_coor_min, h_coor_min), (w_coor_max, h_coor_max)], outline=boundary_color, width=2)
-                    image.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
+                    output.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
 
         images_seen_before+=len(ys)
 
