@@ -315,7 +315,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
 
-                    num_white_pixels = torch.sum(bool_mask).item()
+                    num_white_pixels = torch.sum(msk_tensor_patch).item()
                     if num_white_pixels >= 50:
                         boundary_color = "red"
                     else:
