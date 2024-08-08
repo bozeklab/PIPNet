@@ -316,7 +316,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     msk_tensor_patch = msk_tensor[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
-                    bool_mask = create_boolean_mask(mask)
+                    bool_mask = create_boolean_mask(msk_tensor_patch)
 
                     num_white_pixels = torch.sum(bool_mask).item()
                     print('!!!! ', p, num_white_pixels)
