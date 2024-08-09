@@ -166,6 +166,10 @@ def run_pipnet(args=None):
                        eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'],
                        eval_info['local_size_all_classes'], eval_info['almost_nonzeros'],
                        eval_info['num non-zero prototypes'], "n.a.", "n.a.")
+        visualize(net, projectloader, len(classes), device, 'visualised_prototypes', args)
+        testset_img0_path = test_projectloader.dataset.samples[0][0]
+        test_path = os.path.split(os.path.split(testset_img0_path)[0])[0]
+        vis_pred(net, test_path, classes, device, args)
 
         exit(0)
     
