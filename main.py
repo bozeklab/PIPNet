@@ -96,7 +96,7 @@ def run_pipnet(args=None):
 
     # Initialize or load model
     with torch.no_grad():
-        if args.state_dict_dir_net != '' and args.eval_from_trained is not None:
+        if args.state_dict_dir_net != '' and args.eval_from_trained is None:
             epoch = 0
             checkpoint = torch.load(args.state_dict_dir_net,map_location=device)
             net.load_state_dict(checkpoint['model_state_dict'],strict=True) 
@@ -117,7 +117,7 @@ def run_pipnet(args=None):
             #     if 'optimizer_classifier_state_dict' in checkpoint.keys():
             #         optimizer_classifier.load_state_dict(checkpoint['optimizer_classifier_state_dict'])
             
-        elif args.eval_from_trained is not None:
+        elif args.eval_from_trained is None:
             net.module._add_on.apply(init_weights_xavier)
             torch.nn.init.normal_(net.module._classification.weight, mean=1.0,std=0.1) 
             if args.bias:
