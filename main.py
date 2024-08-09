@@ -80,7 +80,8 @@ def run_pipnet(args=None):
                     classification_layer = classification_layer
                     )
     if args.eval_from_trained:
-        net.load_state_dict(torch.load(args.eval_from_trained))
+        checkpoint = torch.load(args.eval_from_trained, map_location=device)
+        net.load_state_dict(checkpoint['model_state_dict'], strict=True)
 
     net = net.to(device=device)
     net = nn.DataParallel(net, device_ids = device_ids)    
