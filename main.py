@@ -96,7 +96,7 @@ def run_pipnet(args=None):
 
     # Initialize or load model
     with torch.no_grad():
-        if args.state_dict_dir_net != '':
+        if args.state_dict_dir_net != '' and args.eval_from_trained is not None:
             epoch = 0
             checkpoint = torch.load(args.state_dict_dir_net,map_location=device)
             net.load_state_dict(checkpoint['model_state_dict'],strict=True) 
@@ -117,7 +117,7 @@ def run_pipnet(args=None):
             #     if 'optimizer_classifier_state_dict' in checkpoint.keys():
             #         optimizer_classifier.load_state_dict(checkpoint['optimizer_classifier_state_dict'])
             
-        else:
+        elif args.eval_from_trained is not None:
             net.module._add_on.apply(init_weights_xavier)
             torch.nn.init.normal_(net.module._classification.weight, mean=1.0,std=0.1) 
             if args.bias:
@@ -153,10 +153,10 @@ def run_pipnet(args=None):
         log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_top5_acc', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
 
     if args.eval_from_trained:
-        fractions = dict()
         prot_frac = remove_background(net, projectloader, len(classes), device, args)
         set_to_zero = []
         for p in prot_frac.keys():
+            print(p, prot_frac)
             if prot_frac[p] < 0.2:
                 torch.nn.init.zeros_(net.module._classification.weight[:, p])
                 set_to_zero.append(p)
