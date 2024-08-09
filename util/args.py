@@ -77,6 +77,10 @@ def get_args() -> argparse.Namespace:
                         type=int,
                         default=448,
                         help='Input images will be resized to --image_size x --image_size (square). Code only tested with 224x224, so no guarantees that it works for different sizes.')
+    parser.add_argument('--eval_from_trained',
+                        type=str,
+                        default=None,
+                        help='Perform evaluation from a checkpoint')
     parser.add_argument('--image_size_ds',
                         type=int,
                         default=224,

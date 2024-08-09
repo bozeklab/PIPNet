@@ -79,9 +79,18 @@ def run_pipnet(args=None):
                     pool_layer = pool_layer,
                     classification_layer = classification_layer
                     )
+    if args.pretrained_model_path:
+        net.load_state_dict(torch.load(args.pretrained_model_path))
+
     net = net.to(device=device)
     net = nn.DataParallel(net, device_ids = device_ids)    
-    
+
+    if args.eval_from_trained:
+        topks = dict()
+        prot = remove_background(net, projectloader, len(classes), device, args)
+        print(prot)
+        exit(0)
+
     optimizer_net, optimizer_classifier, params_to_freeze, params_to_train, params_backbone = get_optimizer_nn(net, args)   
 
     # Initialize or load model
@@ -271,6 +280,7 @@ def run_pipnet(args=None):
     #topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
     topks = dict()
     prot = remove_background(net, projectloader, len(classes), device, args)
+    print(prot)
     # set weights of prototypes that are never really found in projection set to 0
     set_to_zero = []
     if topks:
