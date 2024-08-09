@@ -208,8 +208,6 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
 
     for p in range(net.module._num_prototypes):
         seen_max[p] = 0.
-        saved[p] = 0
-        saved_ys[p] = []
         fg_patches_per_prototype[p] = []
 
     imgs = projectloader.dataset.imgs
@@ -263,8 +261,6 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
                 idx_to_select = max_idx_per_prototype[pidx, h_idx, w_idx].item()
                 found_max = max_per_prototype[pidx, h_idx, w_idx].item()
 
-                imgname = imgs[images_seen_before + idx_to_select]
-
                 if found_max > seen_max[p]:
                     seen_max[p] = found_max
 
@@ -274,7 +270,6 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
 
                     if isinstance(img_to_open, tuple) or isinstance(img_to_open,
                                                                     list):  # dataset contains tuples of (img,label)
-                        imglabel = img_to_open[1]
                         img_to_open = img_to_open[0]
 
                     if isinstance(mask_to_open, tuple) or isinstance(mask_to_open,
@@ -288,11 +283,9 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
                     img_tensor = transforms.ToTensor()(image).unsqueeze_(0)  # shape (1, 3, h, w)
                     h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape,
                                                                                          patchsize, skip, h_idx, w_idx)
-                    img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p] += 1
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
-                    print(p, num_white_pixels)
                     if num_white_pixels >= 100:
                         fg_patches_per_prototype[p].append(True)
                     else:
@@ -428,7 +421,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
 
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
-                    if num_white_pixels >= 50:
+                    if num_white_pixels >= 100:
                         boundary_color = "red"
                     else:
                         boundary_color = "yellow"

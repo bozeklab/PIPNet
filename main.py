@@ -299,7 +299,6 @@ def run_pipnet(args=None):
     torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained_last'))
 
     topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
-    prot = remove_background(net, projectloader, len(classes), device, args)
     # set weights of prototypes that are never really found in projection set to 0
     set_to_zero = []
     if topks:
@@ -314,6 +313,20 @@ def run_pipnet(args=None):
         print("Weights of prototypes", set_to_zero, "are set to zero because it is never detected with similarity>0.1 in the training set", flush=True)
         eval_info = eval_pipnet(net, testloader, "notused"+str(args.epochs), device, log)
         log.log_values('log_epoch_overview', "notused"+str(args.epochs), eval_info['top1_accuracy'], eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'], eval_info['local_size_all_classes'], eval_info['almost_nonzeros'], eval_info['num non-zero prototypes'], "n.a.", "n.a.")
+
+        prot_frac = remove_background(net, projectloader, len(classes), device, args)
+        set_to_zero = []
+        for p in prot_frac.keys():
+            if prot_frac[p] < 0.2:
+                torch.nn.init.zeros_(net.module._classification.weight[:, p])
+                set_to_zero.append(p)
+        print("Weights of prototypes", set_to_zero,
+              "are set to zero (mostly background)", flush=True)
+        eval_info = eval_pipnet(net, testloader, "notused_bg" + str(args.epochs), device, log)
+        log.log_values('log_epoch_overview', "notused_bg" + str(args.epochs), eval_info['top1_accuracy'],
+                       eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'],
+                       eval_info['local_size_all_classes'], eval_info['almost_nonzeros'],
+                       eval_info['num non-zero prototypes'], "n.a.", "n.a.")
 
     print("classifier weights: ", net.module._classification.weight, flush=True)
     print("Classifier weights nonzero: ", net.module._classification.weight[net.module._classification.weight.nonzero(as_tuple=True)], (net.module._classification.weight[net.module._classification.weight.nonzero(as_tuple=True)]).shape, flush=True)
