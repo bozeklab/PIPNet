@@ -145,11 +145,26 @@ def run_pipnet(args=None):
         print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
 
     if args.eval_from_trained:
-        topks = dict()
+        fractions = dict()
         prot = remove_background(net, projectloader, len(classes), device, args)
-        print('!!!!')
-        print(prot)
-        print(prot.keys())
+        for key, bool_list in prot.items():
+            true_count = sum(bool_list)  # Count the number of True values
+            total_count = len(bool_list)  # Count the total number of items
+            fraction = true_count / total_count if total_count > 0 else 0  # Calculate fraction
+            fractions[key] = fraction
+        set_to_zero = []
+        for prot in prot.keys():
+            if prot[prot] < 0.2:
+                torch.nn.init.zeros_(net.module._classification.weight[:, prot])
+                set_to_zero.append(prot)
+        print("Weights of prototypes", set_to_zero,
+              "are set to zero because they are from background", flush=True)
+        eval_info = eval_pipnet(net, testloader, "notused_bg" + str(args.epochs), device, log)
+        log.log_values('log_epoch_overview', "notused_bg" + str(args.epochs), eval_info['top1_accuracy'],
+                       eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'],
+                       eval_info['local_size_all_classes'], eval_info['almost_nonzeros'],
+                       eval_info['num non-zero prototypes'], "n.a.", "n.a.")
+
         exit(0)
 
     if net.module._num_classes == 2:
