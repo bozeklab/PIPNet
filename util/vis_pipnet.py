@@ -205,8 +205,6 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
     saved = dict()
     saved_ys = dict()
     fg_patches_per_prototype = dict()
-    abstainedimgs = set()
-    notabstainedimgs = set()
 
     for p in range(net.module._num_prototypes):
         seen_max[p] = 0.
@@ -237,7 +235,8 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
     # Iterate through the data
     images_seen_before = 0
     for i, (xs, xs_ds, m, m_ds, ys) in img_iter:  # shuffle is false so should lead to same order as in imgs
-
+        print('!!!')
+        print(fg_patches_per_prototype.keys())
         xs, xs_ds, m, m_ds, ys = xs.to(device), xs_ds.to(device), m.to(device), m_ds.to(device), ys.to(device)
         # Use the model to classify this batch of input data
         with torch.no_grad():
