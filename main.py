@@ -153,10 +153,10 @@ def run_pipnet(args=None):
             fraction = true_count / total_count if total_count > 0 else 0  # Calculate fraction
             fractions[key] = fraction
         set_to_zero = []
-        for prot in prot.keys():
-            if prot[prot] < 0.2:
-                torch.nn.init.zeros_(net.module._classification.weight[:, prot])
-                set_to_zero.append(prot)
+        for p in prot.keys():
+            if prot[p] < 0.2:
+                torch.nn.init.zeros_(net.module._classification.weight[:, p])
+                set_to_zero.append(p)
         print("Weights of prototypes", set_to_zero,
               "are set to zero because they are from background", flush=True)
         eval_info = eval_pipnet(net, testloader, "notused_bg" + str(args.epochs), device, log)
