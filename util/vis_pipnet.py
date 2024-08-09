@@ -298,7 +298,7 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
                         fg_patches_per_prototype[p].append(False)
 
         images_seen_before += len(ys)
-    fractions = {}
+    fractions = dict()
 
     for k in fg_patches_per_prototype.keys():
         bool_list = fg_patches_per_prototype[k]
