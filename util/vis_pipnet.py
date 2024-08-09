@@ -229,7 +229,7 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
     img_iter = tqdm(enumerate(projectloader),
                     total=len(projectloader),
                     mininterval=100.,
-                    desc='Visualizing',
+                    desc='Removing background prototypes',
                     ncols=0)
 
     # Iterate through the data
@@ -292,6 +292,7 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
                     msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p] += 1
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
+                    print(p, num_white_pixels)
                     if num_white_pixels >= 100:
                         fg_patches_per_prototype[p].append(True)
                     else:

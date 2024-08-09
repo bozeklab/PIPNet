@@ -156,7 +156,6 @@ def run_pipnet(args=None):
         prot_frac = remove_background(net, projectloader, len(classes), device, args)
         set_to_zero = []
         for p in prot_frac.keys():
-            print(p, prot_frac)
             if prot_frac[p] < 0.2:
                 torch.nn.init.zeros_(net.module._classification.weight[:, p])
                 set_to_zero.append(p)
