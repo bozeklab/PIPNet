@@ -298,7 +298,14 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
                         fg_patches_per_prototype[p].append(False)
 
         images_seen_before += len(ys)
-    return fg_patches_per_prototype
+    fractions = {}
+
+    for key, bool_list in fg_patches_per_prototype.items():
+        true_count = sum(bool_list)  # Count the number of True values
+        total_count = len(bool_list)  # Count the total number of items
+        fraction = true_count / total_count if total_count > 0 else 0  # Calculate fraction
+        fractions[key] = fraction
+    return fractions
 
 
 def visualize(net, projectloader, num_classes, device, foldername, args: argparse.Namespace):

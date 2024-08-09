@@ -146,15 +146,10 @@ def run_pipnet(args=None):
 
     if args.eval_from_trained:
         fractions = dict()
-        prot = remove_background(net, projectloader, len(classes), device, args)
-        for key, bool_list in prot.items():
-            true_count = sum(bool_list)  # Count the number of True values
-            total_count = len(bool_list)  # Count the total number of items
-            fraction = true_count / total_count if total_count > 0 else 0  # Calculate fraction
-            fractions[key] = fraction
+        prot_frac = remove_background(net, projectloader, len(classes), device, args)
         set_to_zero = []
-        for p in prot.keys():
-            if prot[p] < 0.2:
+        for p in prot_frac.keys():
+            if prot_frac[p] < 0.2:
                 torch.nn.init.zeros_(net.module._classification.weight[:, p])
                 set_to_zero.append(p)
         print("Weights of prototypes", set_to_zero,
