@@ -201,7 +201,6 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 def remove_background(net, projectloader, num_classes, device, args: argparse.Namespace):
     print("Removing background prototypes...", flush=True)
 
-    near_imgs_dirs = dict()
     seen_max = dict()
     saved = dict()
     saved_ys = dict()
@@ -210,8 +209,6 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
     notabstainedimgs = set()
 
     for p in range(net.module._num_prototypes):
-        near_imgs_dir = os.path.join(dir, str(p))
-        near_imgs_dirs[p] = near_imgs_dir
         seen_max[p] = 0.
         saved[p] = 0
         saved_ys[p] = []
