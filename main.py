@@ -90,13 +90,7 @@ def run_pipnet(args=None):
         net.load_state_dict(new_state_dict, strict=True)
 
     net = net.to(device=device)
-    net = nn.DataParallel(net, device_ids = device_ids)    
-
-    if args.eval_from_trained:
-        topks = dict()
-        prot = remove_background(net, projectloader, len(classes), device, args)
-        print(prot)
-        exit(0)
+    net = nn.DataParallel(net, device_ids = device_ids)
 
     optimizer_net, optimizer_classifier, params_to_freeze, params_to_train, params_backbone = get_optimizer_nn(net, args)   
 
@@ -149,7 +143,13 @@ def run_pipnet(args=None):
         args.wshape_ds = wshape_ds #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
         print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
-    
+
+    if args.eval_from_trained:
+        topks = dict()
+        prot = remove_background(net, projectloader, len(classes), device, args)
+        print(prot)
+        exit(0)
+
     if net.module._num_classes == 2:
         # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch
         log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_f1', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
