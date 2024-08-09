@@ -79,7 +79,7 @@ def run_pipnet(args=None):
                     pool_layer = pool_layer,
                     classification_layer = classification_layer
                     )
-    if args.pretrained_model_path:
+    if args.eval_from_trained:
         net.load_state_dict(torch.load(args.pretrained_model_path))
 
     net = net.to(device=device)
