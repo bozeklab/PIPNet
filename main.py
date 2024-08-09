@@ -8,7 +8,7 @@ from pipnet.train import train_pipnet
 from pipnet.test import eval_pipnet, get_thresholds, eval_ood
 from util.eval_cub_csv import eval_prototypes_cub_parts_csv, get_topk_cub, get_proto_patches_cub
 import torch
-from util.vis_pipnet import visualize, visualize_topk
+from util.vis_pipnet import visualize, visualize_topk, remove_background
 from util.visualize_prediction import vis_pred, vis_pred_experiments
 import sys, os
 import random
@@ -270,6 +270,7 @@ def run_pipnet(args=None):
 
     #topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
     topks = dict()
+    prot = remove_background(net, projectloader, len(classes), device, args)
     # set weights of prototypes that are never really found in projection set to 0
     set_to_zero = []
     if topks:
