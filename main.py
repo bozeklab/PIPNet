@@ -80,7 +80,7 @@ def run_pipnet(args=None):
                     classification_layer = classification_layer
                     )
     if args.eval_from_trained:
-        net.load_state_dict(torch.load(args.pretrained_model_path))
+        net.load_state_dict(torch.load(args.eval_from_trained))
 
     net = net.to(device=device)
     net = nn.DataParallel(net, device_ids = device_ids)    
