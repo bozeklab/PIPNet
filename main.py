@@ -80,7 +80,7 @@ def run_pipnet(args=None):
                     classification_layer = classification_layer
                     )
     if args.eval_from_trained:
-        checkpoint = torch.load(args.eval_from_trained, map_location=device)['model_state_dict']
+        checkpoint = torch.load(args.eval_from_trained, map_location=device)
         state_dict = checkpoint['model_state_dict']
         new_state_dict = {}
 
