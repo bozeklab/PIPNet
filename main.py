@@ -144,6 +144,14 @@ def run_pipnet(args=None):
         print("Output shape: ", proto_features.shape, flush=True)
         print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
 
+    if net.module._num_classes == 2:
+        # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch
+        log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_f1', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
+        print("Your dataset only has two classes. Is the number of samples per class similar? If the data is imbalanced, we recommend to use the --weighted_loss flag to account for the imbalance.", flush=True)
+    else:
+        # Create a csv log for storing the test accuracy (top 1 and top 5), mean train accuracy and mean loss for each epoch
+        log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_top5_acc', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
+
     if args.eval_from_trained:
         fractions = dict()
         prot_frac = remove_background(net, projectloader, len(classes), device, args)
@@ -161,15 +169,6 @@ def run_pipnet(args=None):
                        eval_info['num non-zero prototypes'], "n.a.", "n.a.")
 
         exit(0)
-
-    if net.module._num_classes == 2:
-        # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch
-        log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_f1', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
-        print("Your dataset only has two classes. Is the number of samples per class similar? If the data is imbalanced, we recommend to use the --weighted_loss flag to account for the imbalance.", flush=True)
-    else:
-        # Create a csv log for storing the test accuracy (top 1 and top 5), mean train accuracy and mean loss for each epoch
-        log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_top5_acc', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
-    
     
     lrs_pretrain_net = []
     # PRETRAINING PROTOTYPES PHASE
