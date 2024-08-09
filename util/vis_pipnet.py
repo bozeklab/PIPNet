@@ -202,8 +202,6 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
     print("Removing background prototypes...", flush=True)
 
     seen_max = dict()
-    saved = dict()
-    saved_ys = dict()
     fg_patches_per_prototype = dict()
 
     for p in range(net.module._num_prototypes):
@@ -284,7 +282,6 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
                     h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape,
                                                                                          patchsize, skip, h_idx, w_idx)
                     msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                    saved[p] += 1
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
                     if num_white_pixels >= 100:
                         fg_patches_per_prototype[p].append(True)
