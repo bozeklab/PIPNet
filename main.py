@@ -81,6 +81,8 @@ def run_pipnet(args=None):
                     )
     if args.eval_from_trained:
         checkpoint = torch.load(args.eval_from_trained, map_location=device)
+        print('!!!!')
+        print(checkpoint['model_state_dict'].keys())
         net.load_state_dict(checkpoint['model_state_dict'], strict=True)
 
     net = net.to(device=device)
