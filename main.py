@@ -153,14 +153,14 @@ def run_pipnet(args=None):
         log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_top5_acc', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
 
     if args.eval_from_trained:
-        #prot_frac = remove_background(net, projectloader, len(classes), device, args)
-        #set_to_zero = []
-        #for p in prot_frac.keys():
-        #    if prot_frac[p] < 0.2:
-        #        torch.nn.init.zeros_(net.module._classification.weight[:, p])
-        #        set_to_zero.append(p)
-        #print("Weights of prototypes", set_to_zero,
-        #      "are set to zero (mostly background)", flush=True)
+        prot_frac = remove_background(net, projectloader, len(classes), device, args)
+        set_to_zero = []
+        for p in prot_frac.keys():
+            if prot_frac[p] < 0.2:
+                torch.nn.init.zeros_(net.module._classification.weight[:, p])
+                set_to_zero.append(p)
+        print("Weights of prototypes", set_to_zero,
+              "are set to zero (mostly background)", flush=True)
         eval_info = eval_pipnet(net, testloader, "notused_bg" + str(args.epochs), device, log)
         log.log_values('log_epoch_overview', "notused_bg" + str(args.epochs), eval_info['top1_accuracy'],
                        eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'],
