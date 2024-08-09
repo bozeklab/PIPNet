@@ -300,11 +300,12 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
         images_seen_before += len(ys)
     fractions = {}
 
-    for key, bool_list in fg_patches_per_prototype.items():
+    for k in fg_patches_per_prototype.keys():
+        bool_list = fg_patches_per_prototype[k]
         true_count = sum(bool_list)  # Count the number of True values
         total_count = len(bool_list)  # Count the total number of items
         fraction = true_count / total_count if total_count > 0 else 0  # Calculate fraction
-        fractions[key] = fraction
+        fractions[k] = fraction
     return fractions
 
 

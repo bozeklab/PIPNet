@@ -161,7 +161,7 @@ def run_pipnet(args=None):
                 torch.nn.init.zeros_(net.module._classification.weight[:, p])
                 set_to_zero.append(p)
         print("Weights of prototypes", set_to_zero,
-              "are set to zero because they are from background", flush=True)
+              "are set to zero (mostly background)", flush=True)
         eval_info = eval_pipnet(net, testloader, "notused_bg" + str(args.epochs), device, log)
         log.log_values('log_epoch_overview', "notused_bg" + str(args.epochs), eval_info['top1_accuracy'],
                        eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'],
