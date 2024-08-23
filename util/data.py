@@ -46,7 +46,7 @@ def get_data(args: argparse.Namespace):
                              '/data/pwojcik/mito_work/dataset_512/test', args.image_size, args.image_size_ds,
                              args.seed,
                              args.validation_size,
-                             train_dir_pretrain=None#'/data/pwojcik/mito_work/dataset_512/pretrain'
+                             train_dir_pretrain='/data/pwojcik/mito_work/dataset_512/pretrain'
                              )
     raise Exception(f'Could not load data set, data set "{args.dataset}" not found!')
 
