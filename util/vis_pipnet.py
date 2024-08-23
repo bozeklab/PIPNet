@@ -171,6 +171,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 #num_white_pixels = torch.sum(mask).item()
 
                                 saved[p]+=1
+                                print(saved[p])
                                 tensors_per_prototype[p].append(img_tensor_patch)
 
     print("Abstained: ", abstained, flush=True)
