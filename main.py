@@ -72,13 +72,12 @@ def run_pipnet(args=None):
    
     # Create a PIP-Net
     net = PIPNet(num_classes=len(classes),
-                    num_prototypes=num_prototypes,
-                    feature_net = feature_net,
-                    args = args,
-                    add_on_layers = add_on_layers,
-                    pool_layer = pool_layer,
-                    classification_layer = classification_layer
-                    )
+                 num_prototypes=num_prototypes,
+                 feature_net = feature_net,
+                 args = args,
+                 add_on_layers = add_on_layers,
+                 pool_layer = pool_layer,
+                 classification_layer = classification_layer)
     if args.eval_from_trained:
         checkpoint = torch.load(args.eval_from_trained, map_location=device)
         state_dict = checkpoint['model_state_dict']
