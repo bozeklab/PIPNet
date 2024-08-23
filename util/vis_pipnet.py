@@ -171,12 +171,12 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 #num_white_pixels = torch.sum(mask).item()
 
                                 saved[p]+=1
-                                print(saved[p])
                                 tensors_per_prototype[p].append(img_tensor_patch)
 
     print("Abstained: ", abstained, flush=True)
     all_tensors = []
     for p in range(net.module._num_prototypes):
+        print(p, saved[p])
         if saved[p]>0:
             # add text next to each topk-grid, to easily see which prototype it is
             text = "P "+str(p)
