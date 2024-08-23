@@ -191,8 +191,10 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                 torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_%s.png"%(str(p))))
                 if saved[p]>=k:
                     all_tensors+=tensors_per_prototype[p]
+                print('yes saved')
             except:
-                pass
+                print('smoething is wrong')
+                #pass
     if len(all_tensors)>0:
         grid = torchvision.utils.make_grid(all_tensors, nrow=k+1, padding=1)
         torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_all.png"))
