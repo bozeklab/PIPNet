@@ -5,6 +5,7 @@ import os
 import torch.optim
 import torch.utils.data
 import torchvision
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 from typing import Tuple, Dict
@@ -70,10 +71,11 @@ def get_grayscale(augment:bool, train_dir: str, project_dir: str, test_dir:str, 
 
     return create_datasets(transform1, transform2, transform1_ds, transform2_ds,
                            transform_no_augment, transform_no_augment_ds, 3,
-                           train_dir, project_dir, test_dir, seed, validation_size)
+                           train_dir, project_dir, test_dir, seed, validation_size, train_dir_pretrain=train_dir_pretrain)
 
 
-def display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds):
+def display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds,
+                          h_coor_min, h_coor_max, w_coor_min, w_coor_max):
     # Ensure the tensors are on the CPU and convert them to NumPy arrays
     xs1 = xs1.cpu().numpy()
     xs2 = xs2.cpu().numpy()
@@ -85,8 +87,6 @@ def display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds):
     # Transpose the arrays from [C, H, W] to [H, W, C]
     image1 = np.transpose(xs1, (1, 2, 0))
     image2 = np.transpose(xs2, (1, 2, 0))
-    m2 = np.transpose(m2, (1, 2, 0))
-    m2_ds = np.transpose(m2_ds, (1, 2, 0))
     image1_ds = np.transpose(xs1_ds, (1, 2, 0))
     image2_ds = np.transpose(xs2_ds, (1, 2, 0))
 
@@ -111,6 +111,10 @@ def display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds):
     axes[0].imshow(image1, cmap='gray')
     axes[0].axis('off')  # Turn off axis labels
     axes[0].set_title('xs1')
+
+    rect = patches.Rectangle((w_coor_min, h_coor_min), w_coor_max - w_coor_min, h_coor_max - h_coor_min,
+                             linewidth=1, edgecolor='r', facecolor='none')
+    axes[0].add_patch(rect)
 
     axes[1].imshow(image2, cmap='gray')
     axes[1].axis('off')  # Turn off axis labels
@@ -150,7 +154,16 @@ def main():
     for idx in range(len(trainset)):
         xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys = trainset[idx]
         print(idx)
-        display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds)
+        h_coor_min = 141
+        w_coor_min = 130
+        delta = 32
+        msk_tensor_patch = m2[h_coor_min:(h_coor_min + delta), w_coor_min:(w_coor_min + delta)]
+        num_white_pixels = torch.sum(msk_tensor_patch).item()
+        #print(num_white_pixels)
+        #print(msk_tensor_patch)
+        #print(msk_tensor_patch.shape)
+        #display_tensor_images(xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, h_coor_min, (h_coor_min + delta),
+        #                      w_coor_min, (w_coor_min + delta))
         #if idx >= 15:
         #    break
 
