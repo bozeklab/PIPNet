@@ -185,6 +185,9 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             tensors_per_prototype[p].append(txttensor)
             # save top-k image patches in grid
             try:
+                for i in range(len(tensors_per_prototype[p])):
+                    print(tensors_per_prototype[p][i].shape)
+                print()
                 grid = torchvision.utils.make_grid(tensors_per_prototype[p], nrow=k+1, padding=1)
                 torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_%s.png"%(str(p))))
                 if saved[p]>=k:
