@@ -141,6 +141,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1) #shape (num_prototypes)
                             
                             c_weight = torch.max(classification_weights[:, pidx]) #ignore prototypes that are not relevant to any class
+                            print('!!!!')
+                            print('pretrain' in foldername)
                             if (c_weight > 1e-10) or ('pretrain' in foldername):
                                 
                                 h_idx = max_idx_per_prototype_h[pidx, max_idx_per_prototype_w[pidx]]
