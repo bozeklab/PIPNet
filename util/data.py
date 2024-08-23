@@ -200,7 +200,7 @@ def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transf
     else:
         testset_projection = testset
     if train_dir_pretrain is not None:
-        trainvalset_pr = torchvision.datasets.ImageFolder(train_dir_pretrain)
+        trainvalset_pr = torchvision.datasets.ImageFolder(train_dir_pretrain, is_valid_file=is_valid_file)
         targets_pr = trainvalset_pr.targets
         indices_pr = list(range(len(trainvalset_pr)))
         train_indices_pr = indices_pr
