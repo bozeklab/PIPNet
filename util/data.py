@@ -197,6 +197,8 @@ def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transf
         testset_projection = DualTransformImageFolder(test_dir_projection, transform1=transform_no_augment, transform2=transform_no_augment_ds)
     else:
         testset_projection = testset
+    print('!!!')
+    print(train_dir_pretrain)
     if train_dir_pretrain is not None:
         trainvalset_pr = torchvision.datasets.ImageFolder(train_dir_pretrain)
         targets_pr = trainvalset_pr.targets
