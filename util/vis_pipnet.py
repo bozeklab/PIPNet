@@ -161,6 +161,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 msk_tensor = transforms.ToTensor()(mask)
                                 msk_tensor = create_boolean_mask(msk_tensor)
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
+                                print('!!!')
+                                print(img_tensor.shape)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 msk_tensor_patch = msk_tensor[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 num_white_pixels = torch.sum(msk_tensor_patch).item()
