@@ -213,6 +213,8 @@ def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transf
                                                                                 transform3=transform1_ds,
                                                                                 transform4=transform2_ds),
                                                        indices=train_indices_pr)
+        print('!!!')
+        print(len(trainset_pretraining))
     else:
         trainset_pretraining = None
 
