@@ -215,8 +215,6 @@ def create_datasets(transform1, transform2, transform1_ds, transform2_ds, transf
                                                                                 transform3=transform1_ds,
                                                                                 transform4=transform2_ds),
                                                        indices=train_indices_pr)
-        print('!!!')
-        print(len(trainset_pretraining))
     else:
         trainset_pretraining = None
 
@@ -421,7 +419,7 @@ def get_grayscale(augment: bool, train_dir: str, project_dir: str, test_dir: str
 
     return create_datasets(transform1, transform2, transform1_ds, transform2_ds,
                            transform_no_augment, transform_no_augment_ds, 3,
-                           train_dir, project_dir, test_dir, seed, validation_size, train_dir_pretrain=train_dir_pretrain)
+                           train_dir, project_dir, test_dir, seed, validation_size, train_dir_pretrain=None)
 
 
 def is_valid_file(path: str) -> bool:
