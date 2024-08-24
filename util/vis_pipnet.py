@@ -156,6 +156,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 
                                 image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open))
                                 mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open))
+                                image = transforms.Grayscale(3)(image)
 
                                 img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                                 msk_tensor = transforms.ToTensor()(mask)
