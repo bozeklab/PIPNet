@@ -134,14 +134,14 @@ def run_pipnet(args=None):
     with torch.no_grad():
         xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys = next(iter(trainloader))
         xs1 = xs1.to(device)
-        xs1_ds = xs1_ds.to(device)
-        proto_features, proto_features_ds, _, _ = net(xs1, xs1_ds)
+        #xs1_ds = xs1_ds.to(device)
+        proto_features, _, _ = net(xs1, xs1_ds)
         wshape = proto_features.shape[-1]
-        wshape_ds = proto_features_ds.shape[-1]
+        #wshape_ds = proto_features_ds.shape[-1]
         args.wshape = wshape
-        args.wshape_ds = wshape_ds #needed for calculating image patch size
+        #args.wshape_ds = wshape_ds #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
-        print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
+        #print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
 
     if net.module._num_classes == 2:
         # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch

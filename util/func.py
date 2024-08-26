@@ -3,9 +3,9 @@ import torch
 def get_patch_size(args, p, num_prototypes):
     ws = args.wshape
     img_size = args.image_size
-    if p >= num_prototypes // 2:
-        ws = ws // 2
-        img_size = args.image_size_ds
+    #if p >= num_prototypes // 2:
+    #    ws = ws // 2
+    #    img_size = args.image_size_ds
 
     patchsize = img_size // ws
     skip = round((img_size - patchsize) / (ws-1))

@@ -30,31 +30,31 @@ class PIPNet(nn.Module):
 
     def forward(self, xs, xs_ds, inference=False):
         features = self._net(xs)
-        features_ds = self._net(xs_ds)
+        #features_ds = self._net(xs_ds)
         proto_features = self._add_on(features)
-        proto_features_ds = self._add_on(features_ds)
+        #proto_features_ds = self._add_on(features_ds)
         B, D, H, W = proto_features.shape
-        _, _, H_ds, W_ds = proto_features_ds.shape
+        #_, _, H_ds, W_ds = proto_features_ds.shape
         p_f_flat = proto_features.view(B, D, -1).permute(0, 2, 1).reshape(-1, D)
-        p_f_ds_flat = proto_features_ds.view(B, D, -1).permute(0, 2, 1).reshape(-1, D)
-        combined = torch.cat([p_f_flat, p_f_ds_flat], dim=0)
-        softmax_combined = F.softmax(combined, dim=1)
+        #p_f_ds_flat = proto_features_ds.view(B, D, -1).permute(0, 2, 1).reshape(-1, D)
+        #combined = torch.cat([p_f_flat, p_f_ds_flat], dim=0)
+        softmax_single = F.softmax(p_f_flat, dim=1)
 
-        p_f_flat = softmax_combined[:p_f_flat.size(0)]
-        p_f_ds_flat = softmax_combined[p_f_flat.size(0):]
+        p_f_flat = softmax_single[:p_f_flat.size(0)]
+        #p_f_ds_flat = softmax_single[p_f_flat.size(0):]
         proto_features = p_f_flat.view(B, H*W, D).permute(0, 2, 1).view(B, D, H, W)
-        proto_features_ds = p_f_ds_flat.view(B, H_ds*W_ds, D).permute(0, 2, 1).view(B, D, H_ds, W_ds)
+        #proto_features_ds = p_f_ds_flat.view(B, H_ds*W_ds, D).permute(0, 2, 1).view(B, D, H_ds, W_ds)
 
         pooled = self._pool(proto_features)
-        pooled_ds = self._pool(proto_features_ds)
-        pooled = torch.cat([pooled, pooled_ds], dim=1)
+        #pooled_ds = self._pool(proto_features_ds)
+        #pooled = torch.cat([pooled, pooled_ds], dim=1)
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)  #during inference, ignore all prototypes that have 0.1 similarity or lower
             out = self._classification(clamped_pooled) #shape (bs*2, num_classes)
-            return proto_features, proto_features_ds, clamped_pooled, out
+            return proto_features, clamped_pooled, out
         else:
             out = self._classification(pooled) #shape (bs*2, num_classes) 
-            return proto_features, proto_features_ds, pooled, out
+            return proto_features, pooled, out
 
 
 base_architecture_to_features = {'resnet18': resnet18_features,
@@ -99,11 +99,11 @@ def get_network(num_classes: int, args: argparse.Namespace):
         raise Exception('other base architecture NOT implemented')
     
     if args.num_features == 0:
-        num_prototypes = 2 * first_add_on_layer_in_channels
+        num_prototypes = first_add_on_layer_in_channels
         print("Number of prototypes: ", num_prototypes, flush=True)
         add_on_layers = nn.Identity() #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1jghlf
     else:
-        num_prototypes = 2 * args.num_features
+        num_prototypes = args.num_features
         print("Number of prototypes set from", first_add_on_layer_in_channels, "to", num_prototypes,". Extra 1x1 conv layer added. Not recommended.", flush=True)
         add_on_layers = nn.Sequential(
             nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=args.num_features, kernel_size=1, stride = 1, padding=0, bias=True)#,

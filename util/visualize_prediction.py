@@ -66,7 +66,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
             shutil.copy(img, dir)
         
         with torch.no_grad():
-            proto_features, proto_features_ds, pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
+            proto_features, pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
             sorted_out, sorted_out_indices = torch.sort(out.squeeze(0), descending=True)
             for pred_class_idx in sorted_out_indices[:3]:
                 pred_class = classes[pred_class_idx]
@@ -78,14 +78,9 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                 for prototype_idx in sorted_pooled_indices:
                     patchsize, skip = get_patch_size(args, prototype_idx, net.module._num_prototypes)
 
-                    if prototype_idx >= net.module._num_prototypes // 2:
-                        img_size = args.image_size_ds
-                        softmaxes = proto_features_ds
-                        pidx = prototype_idx - net.module._num_prototypes // 2
-                    else:
-                        img_size = args.image_size
-                        softmaxes = proto_features
-                        pidx = prototype_idx
+                    img_size = args.image_size
+                    softmaxes = proto_features
+                    pidx = prototype_idx
 
                     simweight = pooled[0,prototype_idx].item() * net.module._classification.weight[pred_class_idx, prototype_idx].item()
                     simweights.append(simweight)
