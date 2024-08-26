@@ -48,7 +48,7 @@ def eval_pipnet(net,
         with torch.no_grad():
             net.module._classification.weight.copy_(torch.clamp(net.module._classification.weight.data - 1e-3, min=0.)) 
             # Use the model to classify this batch of input data
-            _, _, pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
+            _, pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
             max_out_score, ys_pred = torch.max(out, dim=1)
             ys_pred_scores = torch.amax(F.softmax((torch.log1p(out**net.module._classification.normalization_multiplier)),dim=1),dim=1)
             abstained += (max_out_score.shape[0] - torch.count_nonzero(max_out_score))
