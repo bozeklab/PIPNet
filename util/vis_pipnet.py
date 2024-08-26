@@ -362,14 +362,9 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
 
         for p in range(0, net.module._num_prototypes):
             patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
-            if p >= net.module._num_prototypes // 2:
-                img_size = args.image_size_ds
-                softmaxes = proto_features_ds
-                pidx = p - net.module._num_prototypes // 2
-            else:
-                img_size = args.image_size
-                softmaxes = proto_features
-                pidx = p
+            img_size = args.image_size
+            softmaxes = proto_features
+            pidx = p
 
             max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
             # In PyTorch, images are represented as [channels, height, width]
