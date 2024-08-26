@@ -66,7 +66,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
         with torch.no_grad():
             # Use the model to classify this batch of input data
-            pfs, _, pooled, _ = net(xs=xs, xs_ds=xs_ds, inference=True)
+            pfs, pooled, _ = net(xs=xs, xs_ds=xs_ds, inference=True)
             pooled = pooled.squeeze(0) 
             pfs = pfs.squeeze(0)
 
@@ -245,14 +245,9 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
 
         for p in range(0, net.module._num_prototypes):
             patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
-            if p >= net.module._num_prototypes // 2:
-                img_size = args.image_size_ds
-                softmaxes = proto_features_ds
-                pidx = p - net.module._num_prototypes // 2
-            else:
-                img_size = args.image_size
-                softmaxes = proto_features
-                pidx = p
+            img_size = args.image_size
+            softmaxes = proto_features
+            pidx = p
 
             max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
             # In PyTorch, images are represented as [channels, height, width]
