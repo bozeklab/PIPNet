@@ -100,7 +100,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     return train_info
 
 
-def calculate_loss(proto_features, proto_features_ds, pooled, hflip, hflip_ds, out,
+def calculate_loss(proto_features, pooled, hflip, hflip_ds, out,
                    ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
@@ -114,15 +114,15 @@ def calculate_loss(proto_features, proto_features_ds, pooled, hflip, hflip_ds, o
             pf_parts.append(pf2[i].unsqueeze(0))
     pf2 = torch.cat(pf_parts, dim=0)
 
-    pf1_ds, pf2_ds = proto_features_ds.chunk(2)
-    N = hflip_ds.shape[0]
-    pf_parts_ds = []
-    for i in range(N):
-        if hflip_ds[i]:
-            pf_parts_ds.append(torch.flip(pf2_ds[i], [2]).unsqueeze(0))
-        else:
-            pf_parts_ds.append(pf2_ds[i].unsqueeze(0))
-    pf2_ds = torch.cat(pf_parts_ds, dim=0)
+    # pf1_ds, pf2_ds = proto_features_ds.chunk(2)
+    # N = hflip_ds.shape[0]
+    # pf_parts_ds = []
+    # for i in range(N):
+    #     if hflip_ds[i]:
+    #         pf_parts_ds.append(torch.flip(pf2_ds[i], [2]).unsqueeze(0))
+    #     else:
+    #         pf_parts_ds.append(pf2_ds[i].unsqueeze(0))
+    # pf2_ds = torch.cat(pf_parts_ds, dim=0)
 
     embv2 = pf2.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     embv1 = pf1.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
