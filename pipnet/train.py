@@ -63,7 +63,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         optimizer_net.zero_grad(set_to_none=True)
        
         # Perform a forward pass through the network
-        proto_features, proto_features_ds, pooled, out = net(torch.cat([xs1, xs2]), torch.cat([xs1_ds, xs2_ds]))
+        proto_features, pooled, out = net(torch.cat([xs1, xs2]), torch.cat([xs1_ds, xs2_ds]))
         loss, acc = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         
