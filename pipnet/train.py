@@ -64,7 +64,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
        
         # Perform a forward pass through the network
         proto_features, pooled, out = net(torch.cat([xs1, xs2]), torch.cat([xs1_ds, xs2_ds]))
-        loss, acc = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
+        loss, acc = calculate_loss(proto_features, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         
         # Compute the gradient
@@ -127,11 +127,11 @@ def calculate_loss(proto_features, proto_features_ds, pooled, hflip, hflip_ds, o
     embv2 = pf2.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     embv1 = pf1.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
 
-    embv2_ds = pf2_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
-    embv1_ds = pf1_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
+    #embv2_ds = pf2_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
+    #embv1_ds = pf1_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     
     a_loss_pf = (align_loss(embv1, embv2.detach())+ align_loss(embv2, embv1.detach()))/2.
-    a_loss_pf += (align_loss(embv1_ds, embv2_ds.detach()) + align_loss(embv2_ds, embv1_ds.detach())) / 2.
+    #a_loss_pf += (align_loss(embv1_ds, embv2_ds.detach()) + align_loss(embv2_ds, embv1_ds.detach())) / 2.
     tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
     if not finetune:
