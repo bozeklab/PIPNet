@@ -236,7 +236,7 @@ def remove_background(net, projectloader, num_classes, device, args: argparse.Na
         xs, xs_ds, m, m_ds, ys = xs.to(device), xs_ds.to(device), m.to(device), m_ds.to(device), ys.to(device)
         # Use the model to classify this batch of input data
         with torch.no_grad():
-            proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
+            proto_features, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
 
         for p in range(0, net.module._num_prototypes):
             patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
