@@ -78,6 +78,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                         max_idx_h = max_idx_h[max_idx_w].item()
                         max_idx_w = max_idx_w.item()
                         image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img))
+                        image = transforms.Grayscale(3)(image)
                         img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                         h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, max_idx_h, max_idx_w)
                         img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
