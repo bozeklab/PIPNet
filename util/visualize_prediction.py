@@ -138,13 +138,17 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
         with torch.no_grad():
             softmaxes, pooled, out = net(xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
             sorted_out, sorted_out_indices = torch.sort(out.squeeze(0), descending=True)
-            
+
+
             for pred_class_idx in sorted_out_indices:
                 pred_class = classes[pred_class_idx]
                 save_path = os.path.join(dir, str(f"{out[0,pred_class_idx].item():.3f}")+"_"+pred_class)
                 if not os.path.exists(save_path):
                     os.makedirs(save_path)
-                
+
+                softmaxes_cpu = softmaxes.cpu()
+                torch.save(softmaxes_cpu, os.path.join(save_path, 'sftmax.pth'))
+
                 sorted_pooled, sorted_pooled_indices = torch.sort(pooled.squeeze(0), descending=True)
                 
                 simweights = []
