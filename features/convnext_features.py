@@ -12,6 +12,9 @@ def replace_convlayers_convnext(model, threshold):
                 if module.in_channels > threshold:  # replace bigger strides to reduce receptive field, skip some 2x2 layers. >100 gives output size (26, 26). >300 gives (13, 13)
                     module.stride = tuple(s // 2 for s in module.stride)
 
+                if module.in_channels > threshold:  # replace bigger strides to reduce receptive field, skip some 2x2 layers. >100 gives output size (26, 26). >300 gives (13, 13)
+                    module.stride = tuple(s * 2 for s in module.stride)
+
     return model
 
 
@@ -19,6 +22,9 @@ def convnext_tiny_26_features(pretrained=False, **kwargs):
     model = models.convnext_tiny(pretrained=pretrained, weights=models.ConvNeXt_Tiny_Weights.DEFAULT)
     with torch.no_grad():
         model.avgpool = nn.Identity()
+        model.classifier = nn.Identity()
+        model = replace_convlayers_convnext(model, 100)
+
         model.classifier = nn.Identity()
         model = replace_convlayers_convnext(model, 100)
 
@@ -32,4 +38,8 @@ def convnext_tiny_13_features(pretrained=False, **kwargs):
         model.classifier = nn.Identity()
         model = replace_convlayers_convnext(model, 300)
 
+        model.classifier = nn.Identity()
+        # model = replace_convlayers_convnext(model, 300)
+
     return model
+
