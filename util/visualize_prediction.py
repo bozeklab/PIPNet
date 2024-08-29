@@ -67,6 +67,10 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                 save_path = os.path.join(dir, pred_class+"_"+str(f"{out[0,pred_class_idx].item():.3f}"))
                 if not os.path.exists(save_path):
                     os.makedirs(save_path)
+
+                softmaxes_cpu = softmaxes.cpu()
+                torch.save(softmaxes_cpu, os.path.join(save_path, 'sftmax.pth'))
+
                 sorted_pooled, sorted_pooled_indices = torch.sort(pooled.squeeze(0), descending=True)
                 simweights = []
                 for prototype_idx in sorted_pooled_indices:
