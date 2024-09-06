@@ -35,16 +35,17 @@ class PIPNet(nn.Module):
         proto_features_ds = self._add_on(features_ds)
         B, D, H, W = proto_features.shape
         _, _, H_ds, W_ds = proto_features_ds.shape
-        p_f_flat = proto_features.view(B, D, -1).permute(0, 2, 1) #B, HW, D/2
-        p_f_ds_flat = proto_features_ds.view(B, D, -1).permute(0, 2, 1) #B, H'W', D/2
-        p_f_ds_flat_ups = p_f_ds_flat.repeat_interleave(2, dim=1).repeat_interleave(2, dim=2) #B, HW, D/2
-        combined = torch.cat([p_f_flat, p_f_ds_flat_ups], dim=0) #B, HW, D
+        proto_features_ds_ups = proto_features_ds(2, dim=1).repeat_interleave(2, dim=2)
+        p_f = proto_features.view(B, D, -1).permute(0, 2, 1) #B, HW, D/2
+        p_f_ds = proto_features_ds_ups.view(B, D, -1).permute(0, 2, 1) #B, H'W', D/2
+        #p_f_ds_ups = p_f_ds.repeat_interleave(2, dim=1).repeat_interleave(2, dim=2) #B, HW, D/2
+        combined = torch.cat([p_f, p_f_ds], dim=0) #B, HW, D
         combined = combined.view(B, H, W, D).permite(0, 3, 1, 2)
         #softmax_combined = F.softmax(combined, dim=1)
 
-        #p_f_flat = softmax_combined[:p_f_flat.size(0)]
-        #p_f_ds_flat = softmax_combined[p_f_flat.size(0):]
-        #proto_features = p_f_flat.view(B, H*W, D).permute(0, 2, 1).view(B, D, H, W)
+        #p_f = softmax_combined[:p_f.size(0)]
+        #p_f_ds_flat = softmax_combined[p_f.size(0):]
+        #proto_features = p_f.view(B, H*W, D).permute(0, 2, 1).view(B, D, H, W)
         #proto_features_ds = p_f_ds_flat.view(B, H_ds*W_ds, D).permute(0, 2, 1).view(B, D, H_ds, W_ds)
 
         pooled = self._pool(combined)
