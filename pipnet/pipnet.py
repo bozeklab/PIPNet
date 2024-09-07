@@ -48,7 +48,7 @@ class PIPNet(nn.Module):
         #proto_features = p_f.view(B, H*W, D).permute(0, 2, 1).view(B, D, H, W)
         #proto_features_ds = p_f_ds_flat.view(B, H_ds*W_ds, D).permute(0, 2, 1).view(B, D, H_ds, W_ds)
 
-        pooled = self._pool(combined)
+        pooled = self._pool(softmax_combined)
         #pooled_ds = self._pool(proto_features_ds)
         #pooled = torch.cat([pooled, pooled_ds], dim=1)
         if inference:
