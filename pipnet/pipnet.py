@@ -41,7 +41,7 @@ class PIPNet(nn.Module):
         #p_f_ds_ups = p_f_ds.repeat_interleave(2, dim=1).repeat_interleave(2, dim=2) #B, HW, D/2
         combined = torch.cat([p_f, p_f_ds], dim=1) #B, D, HW
         combined = combined.view(B, D*2, H, W)
-        #softmax_combined = F.softmax(combined, dim=1)
+        softmax_combined = F.softmax(combined, dim=1)
 
         #p_f = softmax_combined[:p_f.size(0)]
         #p_f_ds_flat = softmax_combined[p_f.size(0):]
