@@ -118,8 +118,6 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             
                             c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
                             if (c_weight > 1e-10) or ('train' in foldername):
-                                print('!!!')
-                                print('pretrain')
                                 h_idx = max_idx_per_prototype_h[p, max_idx_per_prototype_w[p]]
                                 w_idx = max_idx_per_prototype_w[p]
                                 
@@ -134,11 +132,10 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                         
                                 saved[p]+=1
                                 tensors_per_prototype[p].append(img_tensor_patch)
-                            else:
-                                print('dupa')
 
     print("Abstained: ", abstained, flush=True)
     all_tensors = []
+    import traceback
     for p in range(net.module._num_prototypes):
         if saved[p]>0:
             # add text next to each topk-grid, to easily see which prototype it is
@@ -155,7 +152,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                 if saved[p]>=k:
                     all_tensors+=tensors_per_prototype[p]
             except:
-                pass
+                print(f"An error occurred while processing prototype {p}: {e}")
+                traceback.print_exc()
     if len(all_tensors)>0:
         grid = torchvision.utils.make_grid(all_tensors, nrow=k+1, padding=1)
         torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_all.png"))
