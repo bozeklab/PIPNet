@@ -118,7 +118,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             
                             c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
                             if (c_weight > 1e-10) or ('train' in foldername):
-                                
+                                print('!!!')
+                                print('pretrain')
                                 h_idx = max_idx_per_prototype_h[p, max_idx_per_prototype_w[p]]
                                 w_idx = max_idx_per_prototype_w[p]
                                 
@@ -133,6 +134,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                         
                                 saved[p]+=1
                                 tensors_per_prototype[p].append(img_tensor_patch)
+                            else:
+                                print('dupa')
 
     print("Abstained: ", abstained, flush=True)
     all_tensors = []
