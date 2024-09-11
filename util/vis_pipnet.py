@@ -151,7 +151,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                 torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_%s.png"%(str(p))))
                 if saved[p]>=k:
                     all_tensors+=tensors_per_prototype[p]
-            except:
+            except Exception as e:
                 print(f"An error occurred while processing prototype {p}: {e}")
                 traceback.print_exc()
     if len(all_tensors)>0:
