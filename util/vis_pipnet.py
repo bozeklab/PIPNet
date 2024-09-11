@@ -130,9 +130,16 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                                        
+
+                                txtimage = Image.new("RGB", (img_tensor_patch.shape[1], img_tensor_patch.shape[2]),
+                                                     (0, 0, 0))
+                                draw = D.Draw(txtimage)
+                                draw.text((img_tensor_patch.shape[0] // 2, img_tensor_patch.shape[1] // 2), str(max_per_prototype),
+                                          anchor='mm', fill="red")
+                                txttensor = transforms.ToTensor()(txtimage)
+
                                 saved[p]+=1
-                                tensors_per_prototype[p].append(img_tensor_patch)
+                                tensors_per_prototype[p].append(txttensor)
 
     print("Abstained: ", abstained, flush=True)
     all_tensors = []
