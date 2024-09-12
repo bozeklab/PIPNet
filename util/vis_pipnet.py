@@ -141,8 +141,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
                                 draw = D.Draw(pil_image)
                                 draw.text((img_tensor_patch.shape[1] // 2, img_tensor_patch.shape[2] // 2), str(score),
-                                          font=font,
-                                          anchor='mm', fill="white")
+                                          #font=font,
+                                          anchor='mm', fill="red")
                                 txttensor = transforms.ToTensor()(pil_image)
 
                                 saved[p]+=1
