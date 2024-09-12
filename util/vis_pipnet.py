@@ -141,7 +141,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
                                 draw = D.Draw(pil_image)
                                 print('!!!!!')
-                                print(str(max_per_prototype))
+                                print(str(max_per_prototype.shape))
                                 draw.text((img_tensor_patch.shape[1] // 2, img_tensor_patch.shape[2] // 2), str(max_per_prototype),
                                           font=font,
                                           anchor='mm', fill="white")
