@@ -146,7 +146,7 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
 
             for pred_class_idx in sorted_out_indices:
                 pred_class = classes[pred_class_idx]
-                save_path = os.path.join(dir, str(f"{out[0,pred_class_idx].item():.4f}")+"_"+pred_class)
+                save_path = os.path.join(dir, str(f"{out[0,pred_class_idx].item():.3f}")+"_"+pred_class)
                 if not os.path.exists(save_path):
                     os.makedirs(save_path)
 
