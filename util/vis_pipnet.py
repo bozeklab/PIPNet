@@ -131,7 +131,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
                                 npy_path = os.path.splitext(os.path.basename(img_to_open))[0]
                                 softmaxes = softmaxes.cpu().numpy()
-                                with open(os.path.join(dir, f'{npy_path}.pkl'), 'rb') as f:
+                                with open(os.path.join(dir, f'{npy_path}.pkl'), 'wb') as f:
                                     pickle.dump(softmaxes, f)
 
 
