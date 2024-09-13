@@ -4,6 +4,8 @@ import torch
 import torch.nn.functional as F
 import torch.utils.data
 import os
+import pickle
+import numpy as np
 from PIL import Image, ImageDraw as D
 import torchvision.transforms as transforms
 import torchvision
@@ -126,6 +128,12 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                     img_to_open = img_to_open[0]
 
                                 from PIL import ImageFont
+
+                                npy_path = os.path.splitext(os.path.basename(img_to_open))[0]
+                                softmaxes = softmaxes.cpu().numpy()
+                                with open(os.path.join(dir, f'{npy_path}.pkl'), 'rb') as f:
+                                    pickle.dump(softmaxes, f)
+
 
                                 image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open))
                                 image = transforms.Grayscale(3)(image)
