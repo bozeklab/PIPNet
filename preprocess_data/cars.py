@@ -5,7 +5,7 @@ import numpy as np
 import time
 from PIL import Image
 
-path = './data/cars/dataset/'
+path = '/data/pwojcik/stan_cars/'
 
 if not os.path.isdir(path):
     os.mkdir(path)
