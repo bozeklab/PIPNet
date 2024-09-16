@@ -61,9 +61,9 @@ for idx, item in enumerate(mat['annotations'][0]):
     print(item, class_ids_to_names[cls], fname)
 
     if os.path.exists(train_path):
-        output_path = os.path.join(training_output, class_ids_to_names[item])
+        output_path = os.path.join(training_output, class_ids_to_names[cls])
     else:
-        output_path = os.path.join(testing_output, class_ids_to_names[item])
+        output_path = os.path.join(testing_output, class_ids_to_names[cls])
     if not os.path.exists(output_path):
         os.mkdir(output_path)
     shutil.copy(os.path.join(training_source, fname), os.path.join(output_path, fname))
