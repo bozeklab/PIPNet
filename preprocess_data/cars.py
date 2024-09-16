@@ -24,12 +24,12 @@ for row in range(len(class_names['class_names'][0])):
 # adapted from https://github.com/tonylaioffer/cnn_car_classification/blob/master/data_prepare.py
 mat = scipy.io.loadmat('/data/pwojcik/stan_cars/cars_annos.mat')
 # print("annotations: ", mat['annotations'])
-training_class = mat['annotations']['class']
-training_fname = mat['annotations']['fname']
-training_x1 = mat['annotations']['bbox_x1']
-training_y1 = mat['annotations']['bbox_y1']
-training_x2 = mat['annotations']['bbox_x2']
-training_y2 = mat['annotations']['bbox_y2']
+#training_class = mat['annotations']['class']
+#training_fname = mat['annotations']['fname']
+#training_x1 = mat['annotations']['bbox_x1']
+#training_y1 = mat['annotations']['bbox_y1']
+#training_x2 = mat['annotations']['bbox_x2']
+#training_y2 = mat['annotations']['bbox_y2']
 
 mat = scipy.io.loadmat('/data/pwojcik/stan_cars/cars_annos.mat')
 # print(mat['annotations'])
