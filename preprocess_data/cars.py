@@ -13,7 +13,7 @@ if not os.path.isdir(path):
 time_start = time.time()
 
 # convert ids to class names
-class_names = scipy.io.loadmat('./data/cars/devkit/cars_annos.mat')
+class_names = scipy.io.loadmat('/data/pwojcik/stan_cars/cars_annos.mat')
 class_ids_to_names = dict()
 for row in range(len(class_names['class_names'][0])):
     name = class_names['class_names'][0][row][0]
@@ -22,7 +22,7 @@ for row in range(len(class_names['class_names'][0])):
     class_ids_to_names[row + 1] = name
 
 # adapted from https://github.com/tonylaioffer/cnn_car_classification/blob/master/data_prepare.py
-mat = scipy.io.loadmat('./data/cars/devkit/cars_annos.mat')
+mat = scipy.io.loadmat('/data/pwojcik/stan_cars/cars_annos.mat')
 # print("annotations: ", mat['annotations'])
 training_class = mat['annotations']['class']
 training_fname = mat['annotations']['fname']
