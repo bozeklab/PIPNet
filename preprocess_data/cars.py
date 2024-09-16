@@ -50,8 +50,8 @@ for directory in [training_output, testing_output]:
 for idx, item in enumerate(mat['annotations'][0]):
     print(item)
     #cls = cls[0][0]
-    fname = item[0][idx]
-    cls = int(item[1][idx][0])
+    fname = item[0][0]
+    cls = int(item[1][0][0])
     print('!!!')
     print(fname, cls)
     fname = os.path.basename(fname)
