@@ -33,8 +33,8 @@ training_y2 = mat['annotations']['bbox_y2']
 
 mat = scipy.io.loadmat('/data/pwojcik/stan_cars/cars_annos.mat')
 # print(mat['annotations'])
-testing_class = mat['annotations']['class']
-testing_fname = mat['annotations']['fname']
+#testing_class = mat['annotations']['class']
+#testing_fname = mat['annotations']['fname']
 
 training_source = '/data/pwojcik/stan_cars/cars_train/'  # specify source training image path
 training_output = path + 'train/'  # specify target trainig image path (trainig images need to be orgnized to specific structure)
