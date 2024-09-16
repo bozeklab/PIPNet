@@ -47,20 +47,21 @@ for directory in [training_output, testing_output]:
     if not os.path.exists(directory):
         os.mkdir(directory)
 
-for idx, cls in enumerate(mat['annotations'][0]):
-    print(cls)
+for idx, item in enumerate(mat['annotations'][0]):
+    print(item)
     #cls = cls[0][0]
-    fname = training_fname[0][idx][0]
+    fname = item[0][idx][0][0]
+    cls = item[0][idx][1][0]
     fname = os.path.basename(fname)
 
     train_path = os.path.join(training_source, fname)
     test_path = os.path.join(testing_source, fname)
-    print(cls, class_ids_to_names[cls], fname)
+    print(item, class_ids_to_names[item], fname)
 
     if os.path.exists(train_path):
-        output_path = os.path.join(training_output, class_ids_to_names[cls])
+        output_path = os.path.join(training_output, class_ids_to_names[item])
     else:
-        output_path = os.path.join(testing_output, class_ids_to_names[cls])
+        output_path = os.path.join(testing_output, class_ids_to_names[item])
     if not os.path.exists(output_path):
         os.mkdir(output_path)
     shutil.copy(os.path.join(training_source, fname), os.path.join(output_path, fname))
