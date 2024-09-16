@@ -51,7 +51,9 @@ for idx, item in enumerate(mat['annotations'][0]):
     print(item)
     #cls = cls[0][0]
     fname = item[0][idx][0][0]
-    cls = int(item[0][idx][1][0])
+    cls = item[0][idx][1][0]
+    print('!!!')
+    print(fname, cls)
     fname = os.path.basename(fname)
 
     train_path = os.path.join(training_source, fname)
