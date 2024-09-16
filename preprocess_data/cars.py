@@ -47,8 +47,9 @@ for directory in [training_output, testing_output]:
     if not os.path.exists(directory):
         os.mkdir(directory)
 
-for idx, cls in enumerate(training_class[0]):
-    cls = cls[0][0]
+for idx, cls in enumerate(mat['annotations'][0]):
+    print(cls)
+    #cls = cls[0][0]
     fname = training_fname[0][idx][0]
     fname = os.path.basename(fname)
 
