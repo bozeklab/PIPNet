@@ -36,10 +36,10 @@ mat = scipy.io.loadmat('/data/pwojcik/stan_cars/cars_annos.mat')
 #testing_class = mat['annotations']['class']
 #testing_fname = mat['annotations']['fname']
 
-training_source = '/data/pwojcik/stan_cars/cars_train/'  # specify source training image path
+training_source = '/data/pwojcik/stan_cars/cars_train/cars_train/'  # specify source training image path
 training_output = path + 'train/'  # specify target trainig image path (trainig images need to be orgnized to specific structure)
 
-testing_source = '/data/pwojcik/stan_cars/cars_test/'  # specify source testing image path
+testing_source = '/data/pwojcik/stan_cars/cars_test/cars_test/'  # specify source testing image path
 testing_output = path + 'test/'  # specify target testing image path (testing images need to be orgnized to specific structure)
 
 
