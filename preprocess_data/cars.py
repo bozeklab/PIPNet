@@ -51,7 +51,7 @@ for idx, item in enumerate(mat['annotations'][0]):
     print(item)
     #cls = cls[0][0]
     fname = item[0][idx]
-    cls = item[1][idx]
+    cls = item[1][idx][0]
     print('!!!')
     print(fname, cls)
     fname = os.path.basename(fname)
