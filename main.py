@@ -322,7 +322,7 @@ def run_pipnet(args=None):
                 set_to_zero.append(p)
         print("Weights of prototypes", set_to_zero,
               "are set to zero (mostly background)", flush=True)
-        topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk_nobck', args)
+        topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk_nobck', args, compute_jaccard=True)
         eval_info = eval_pipnet(net, testloader, "notused_bg" + str(args.epochs), device, log)
         log.log_values('log_epoch_overview', "notused_bg" + str(args.epochs), eval_info['top1_accuracy'],
                        eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'],

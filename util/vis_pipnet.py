@@ -14,7 +14,7 @@ from util.func import get_patch_size
 import random
 
 @torch.no_grad()                    
-def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=10):
+def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=5, compute_jaccard=False):
     print("Visualizing prototypes for topk...", flush=True)
     dir = os.path.join(args.log_dir, foldername)
     if not os.path.exists(dir):
@@ -25,6 +25,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     saved = dict()
     saved_ys = dict()
     tensors_per_prototype = dict()
+
+    m_jaccard = []
     
     for p in range(net.module._num_prototypes):
         near_imgs_dir = os.path.join(dir, str(p))
@@ -162,11 +164,11 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 msk_tensor = transforms.ToTensor()(mask)
                                 msk_tensor = create_boolean_mask(msk_tensor)
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
-                                print('!!!')
-                                print(img_tensor.shape)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 msk_tensor_patch = msk_tensor[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                                 num_white_pixels = torch.sum(msk_tensor_patch).item()
+
+                                m_jaccard.append(num_white_pixels/(h_coor_max-h_coor_min)*(w_coor_max-w_coor_min))
 
                                 # Count the number of white pixels
                                 #num_white_pixels = torch.sum(mask).item()
@@ -175,6 +177,9 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 tensors_per_prototype[p].append(img_tensor_patch)
 
     print("Abstained: ", abstained, flush=True)
+    if compute_jaccard:
+        import statistics
+        print('Jaccard: ', statistics.mean(m_jaccard))
     all_tensors = []
     for p in range(net.module._num_prototypes):
         print(p, saved[p])
