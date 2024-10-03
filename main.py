@@ -156,7 +156,7 @@ def run_pipnet(args=None):
         set_to_zero = []
         for p in prot_frac.keys():
             print(p, prot_frac[p])
-            if prot_frac[p] < 0.2:
+            if prot_frac[p] < 0.3:
                 torch.nn.init.zeros_(net.module._classification.weight[:, p])
                 set_to_zero.append(p)
         print("Weights of prototypes", set_to_zero,
@@ -317,7 +317,7 @@ def run_pipnet(args=None):
         prot_frac = remove_background(net, projectloader, len(classes), device, args)
         set_to_zero = []
         for p in prot_frac.keys():
-            if prot_frac[p] < 0.2:
+            if prot_frac[p] < 0.3:
                 torch.nn.init.zeros_(net.module._classification.weight[:, p])
                 set_to_zero.append(p)
         print("Weights of prototypes", set_to_zero,
