@@ -433,6 +433,10 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
 
+                    softmaxes_resized = transforms.ToPILImage()(softmaxes[0, pidx, :, :])
+                    softmaxes_resized = softmaxes_resized.resize((img_size, img_size), Image.BICUBIC)
+                    softmaxes_np = (transforms.ToTensor()(softmaxes_resized)).squeeze().numpy()
+
                     heatmap = cv2.applyColorMap(np.uint8(255 * softmaxes_np), cv2.COLORMAP_JET)
                     heatmap = np.float32(heatmap) / 255
                     heatmap = heatmap[..., ::-1]  # OpenCV's BGR to RGB
