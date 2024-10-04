@@ -28,6 +28,14 @@ def get_data(args: argparse.Namespace):
         return get_cars(True, './data/cars/dataset/train', './data/cars/dataset/train', './data/cars/dataset/test', args.image_size, args.seed, args.validation_size)
     if args.dataset == 'grayscale_example':
         return get_grayscale(True, '/data/pwojcik/mnist_ds/train', '/data/pwojcik/mnist_ds/train', '/data/pwojcik/mnist_ds/test', args.image_size, args.seed, args.validation_size)
+    if args.dataset == 'grayscale_mito':
+        return get_grayscale(True, '/data/pwojcik/mito_work/dataset_512/train',
+                             '/data/pwojcik/mito_work/dataset_512/train',
+                             '/data/pwojcik/mito_work/dataset_512/test', args.image_size, args.image_size_ds,
+                             args.seed,
+                             args.validation_size,
+                             train_dir_pretrain=None#'/data/pwojcik/mito_work/dataset_512/pretrain'
+                             )
     raise Exception(f'Could not load data set, data set "{args.dataset}" not found!')
 
 def get_dataloaders(args: argparse.Namespace, device):
@@ -136,6 +144,16 @@ def get_dataloaders(args: argparse.Namespace, device):
     print("Num classes (k) = ", len(classes), classes[:5], "etc.", flush=True)
     return trainloader, trainloader_pretraining, trainloader_normal, trainloader_normal_augment, projectloader, testloader, test_projectloader, classes
 
+class ImageFolderWithoutMasks(torchvision.datasets.ImageFolder):
+    def __init__(self, root, transform=None):
+        super().__init__(root, transform=transform)
+
+    def make_dataset(self, directory, class_to_idx, extensions=None, is_valid_file=None):
+        images = super().make_dataset(directory, class_to_idx, extensions, is_valid_file)
+        # Filter out files containing 'mask' in the filename
+        images = [(path, class_idx) for path, class_idx in images if 'mask' not in os.path.basename(path)]
+        return images
+
 def create_datasets(transform1, transform2, transform_no_augment, num_channels:int, train_dir:str, project_dir: str, test_dir:str, seed:int, validation_size:float, train_dir_pretrain = None, test_dir_projection = None, transform1p=None):
     
     trainvalset = torchvision.datasets.ImageFolder(train_dir)
@@ -150,22 +168,22 @@ def create_datasets(transform1, transform2, transform_no_augment, num_channels:i
             raise ValueError("There is no test set directory, so validation size should be > 0 such that training set can be split.")
         subset_targets = list(np.array(targets)[train_indices])
         train_indices, test_indices = train_test_split(train_indices,test_size=validation_size,stratify=subset_targets, random_state=seed)
-        testset = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transform_no_augment), indices=test_indices)
+        testset = torch.utils.data.Subset(ImageFolderWithoutMasks(train_dir, transform=transform_no_augment), indices=test_indices)
         print("Samples in trainset:", len(indices), "of which",len(train_indices),"for training and ", len(test_indices),"for testing.", flush=True)
     else:
-        testset = torchvision.datasets.ImageFolder(test_dir, transform=transform_no_augment)
+        testset = ImageFolderWithoutMasks(test_dir, transform=transform_no_augment)
     
     trainset = torch.utils.data.Subset(TwoAugSupervisedDataset(trainvalset, transform1=transform1, transform2=transform2), indices=train_indices)
-    trainset_normal = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transform_no_augment), indices=train_indices)
-    trainset_normal_augment = torch.utils.data.Subset(torchvision.datasets.ImageFolder(train_dir, transform=transforms.Compose([transform1, transform2])), indices=train_indices)
-    projectset = torchvision.datasets.ImageFolder(project_dir, transform=transform_no_augment)
+    trainset_normal = torch.utils.data.Subset(ImageFolderWithoutMasks(train_dir, transform=transform_no_augment), indices=train_indices)
+    trainset_normal_augment = torch.utils.data.Subset(ImageFolderWithoutMasks(train_dir, transform=transforms.Compose([transform1, transform2])), indices=train_indices)
+    projectset = ImageFolderWithoutMasks(project_dir, transform=transform_no_augment)
 
     if test_dir_projection is not None:
-        testset_projection = torchvision.datasets.ImageFolder(test_dir_projection, transform=transform_no_augment)
+        testset_projection = ImageFolderWithoutMasks(test_dir_projection, transform=transform_no_augment)
     else:
         testset_projection = testset
     if train_dir_pretrain is not None:
-        trainvalset_pr = torchvision.datasets.ImageFolder(train_dir_pretrain)
+        trainvalset_pr = ImageFolderWithoutMasks(train_dir_pretrain)
         targets_pr = trainvalset_pr.targets
         indices_pr = list(range(len(trainvalset_pr)))
         train_indices_pr = indices_pr

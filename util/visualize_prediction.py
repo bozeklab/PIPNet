@@ -2,6 +2,8 @@ import os, shutil
 import argparse
 from PIL import Image, ImageDraw as D
 import torchvision
+
+from util.data import ImageFolderWithoutMasks
 from util.func import get_patch_size
 from torchvision import transforms
 import torch
@@ -36,7 +38,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                             transforms.ToTensor(),
                             normalize])
 
-    vis_test_set = torchvision.datasets.ImageFolder(vis_test_dir, transform=transform_no_augment)
+    vis_test_set = ImageFolderWithoutMasks(vis_test_dir, transform=transform_no_augment)
     vis_test_loader = torch.utils.data.DataLoader(vis_test_set, batch_size = 1,
                                                 shuffle=False, pin_memory=not args.disable_cuda and torch.cuda.is_available(),
                                                 num_workers=num_workers)
@@ -124,7 +126,7 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
                             transforms.ToTensor(),
                             normalize])
 
-    vis_test_set = torchvision.datasets.ImageFolder(imgs_dir, transform=transform_no_augment)
+    vis_test_set = ImageFolderWithoutMasks(imgs_dir, transform=transform_no_augment)
     vis_test_loader = torch.utils.data.DataLoader(vis_test_set, batch_size = 1,
                                                 shuffle=False, pin_memory=not args.disable_cuda and torch.cuda.is_available(),
                                                 num_workers=num_workers)
