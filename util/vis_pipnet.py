@@ -145,11 +145,21 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
 
+                                mask_filename = f"mask_{filename}.png"
+                                mask_path = os.path.join('/data/pwojcik/mito_work/dataset_512_all/', mask_filename)
+                                mask = Image.open(mask_path).convert("RGB")
+                                mask = transforms.Resize((448, 448))(mask)
+                                mask_tensor = transforms.ToTensor()(mask)
+                                mask_tensor = mask_tensor[:, h_coor_min:h_coor_max,
+                                              w_coor_min:w_coor_max]
+
+                                img_tensor_patch = 0.6 * img_tensor_patch + 0.4 * mask_tensor
                                 #font_size = 50
                                 #font = ImageFont.truetype("arial.ttf", font_size)
 
                                 to_pil = transforms.ToPILImage()
                                 pil_image = to_pil(img_tensor_patch)
+                                pil_mask = to_pil(mask_tensor)
 
                                 #draw = D.Draw(pil_image)
                                 #draw.text((img_tensor_patch.shape[1] // 2, img_tensor_patch.shape[2] // 2), f"{score:.3f}",
