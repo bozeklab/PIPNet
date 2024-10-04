@@ -135,8 +135,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
                                 npy_path = os.path.splitext(os.path.basename(img_to_open))[0]
                                 softmaxes = softmaxes.cpu().numpy()
-                                with open(os.path.join(dir, f'{npy_path}.pkl'), 'wb') as f:
-                                    pickle.dump(softmaxes, f)
+                                #with open(os.path.join(dir, f'{npy_path}.pkl'), 'wb') as f:
+                                #    pickle.dump(softmaxes, f)
 
 
                                 image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open))
@@ -246,7 +246,9 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
 
     # Iterate through the data
     images_seen_before = 0
-    for i, (xs, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
+    for i, sample in img_iter:
+        xs, ys = sample['image']
+        filename = sample['filename'] #shuffle is false so should lead to same order as in imgs
         if i % skip_img == 0:
             images_seen_before+=xs.shape[0]
             continue
