@@ -5,7 +5,6 @@ import numpy as np
 import torch.nn.functional as F
 import torch.utils.data
 import cv2
-from util.vis_pipnet import get_img_coordinates
 import matplotlib.pyplot as plt
 import numpy as np
 import os
