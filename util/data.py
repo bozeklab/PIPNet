@@ -31,7 +31,7 @@ def get_data(args: argparse.Namespace):
     if args.dataset == 'grayscale_mito':
         return get_grayscale(True, '/data/pwojcik/mito_work/dataset_512/train',
                              '/data/pwojcik/mito_work/dataset_512/train',
-                             '/data/pwojcik/mito_work/dataset_512/test', args.image_size, args.image_size_ds,
+                             '/data/pwojcik/mito_work/dataset_512/test', args.image_size,
                              args.seed,
                              args.validation_size,
                              train_dir_pretrain=None#'/data/pwojcik/mito_work/dataset_512/pretrain'
