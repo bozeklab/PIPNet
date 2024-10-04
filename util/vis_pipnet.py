@@ -141,16 +141,16 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
 
-                                font_size = 50
-                                font = ImageFont.truetype("arial.ttf", font_size)
+                                #font_size = 50
+                                #font = ImageFont.truetype("arial.ttf", font_size)
 
                                 to_pil = transforms.ToPILImage()
                                 pil_image = to_pil(img_tensor_patch)
 
-                                draw = D.Draw(pil_image)
-                                draw.text((img_tensor_patch.shape[1] // 2, img_tensor_patch.shape[2] // 2), f"{score:.3f}",
-                                          #font=font,
-                                          anchor='mm', fill="red")
+                                #draw = D.Draw(pil_image)
+                                #draw.text((img_tensor_patch.shape[1] // 2, img_tensor_patch.shape[2] // 2), f"{score:.3f}",
+                                #         #font=font,
+                                #         anchor='mm', fill="red")
                                 txttensor = transforms.ToTensor()(pil_image)
 
                                 saved[p]+=1
