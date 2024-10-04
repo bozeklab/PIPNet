@@ -145,6 +145,7 @@ def get_dataloaders(args: argparse.Namespace, device):
     print("Num classes (k) = ", len(classes), classes[:5], "etc.", flush=True)
     return trainloader, trainloader_pretraining, trainloader_normal, trainloader_normal_augment, projectloader, testloader, test_projectloader, classes
 
+
 class ImageFolderWithoutMasks(torchvision.datasets.ImageFolder):
     def __init__(self, root, transform=None):
         super().__init__(root, transform=transform)
@@ -154,6 +155,28 @@ class ImageFolderWithoutMasks(torchvision.datasets.ImageFolder):
         # Filter out files containing 'mask' in the filename
         images = [(path, class_idx) for path, class_idx in images if 'mask' not in os.path.basename(path)]
         return images
+
+
+class ImageFolderWithoutMasksFilenames(torchvision.datasets.ImageFolder):
+    def __init__(self, root, transform=None):
+        super().__init__(root, transform=transform)
+
+    def make_dataset(self, directory, class_to_idx, extensions=None, is_valid_file=None):
+        images = super().make_dataset(directory, class_to_idx, extensions, is_valid_file)
+        # Filter out files containing 'mask' in the filename
+        images = [(path, class_idx) for path, class_idx in images if 'mask' not in os.path.basename(path)]
+        return images
+
+    def __getitem__(self, index):
+        # Get the original output (image and label)
+        image, label = super().__getitem__(index)
+        # Get the image path and extract the filename
+        path, _ = self.imgs[index]
+        filename = os.path.basename(path)
+        # Return the image, label, and filename
+        return {'image': (image, label),
+                'filename': filename}
+
 
 def create_datasets(transform1, transform2, transform_no_augment, num_channels:int, train_dir:str, project_dir: str, test_dir:str, seed:int, validation_size:float, train_dir_pretrain = None, test_dir_projection = None, transform1p=None):
     
@@ -177,7 +200,7 @@ def create_datasets(transform1, transform2, transform_no_augment, num_channels:i
     trainset = torch.utils.data.Subset(TwoAugSupervisedDataset(trainvalset, transform1=transform1, transform2=transform2), indices=train_indices)
     trainset_normal = torch.utils.data.Subset(ImageFolderWithoutMasks(train_dir, transform=transform_no_augment), indices=train_indices)
     trainset_normal_augment = torch.utils.data.Subset(ImageFolderWithoutMasks(train_dir, transform=transforms.Compose([transform1, transform2])), indices=train_indices)
-    projectset = ImageFolderWithoutMasks(project_dir, transform=transform_no_augment)
+    projectset = ImageFolderWithoutMasksFilenames(project_dir, transform=transform_no_augment)
 
     if test_dir_projection is not None:
         testset_projection = ImageFolderWithoutMasks(test_dir_projection, transform=transform_no_augment)
