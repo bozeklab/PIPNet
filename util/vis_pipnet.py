@@ -13,7 +13,7 @@ from util.func import get_patch_size
 import random
 
 @torch.no_grad()                    
-def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=10):
+def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=5):
     print("Visualizing prototypes for topk...", flush=True)
     dir = os.path.join(args.log_dir, foldername)
     if not os.path.exists(dir):
@@ -52,7 +52,9 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     images_seen = 0
     topks = dict()
     # Iterate through the training set
-    for i, (xs, ys) in img_iter:
+    for i, sample in img_iter:
+        xs, ys = sample['image']
+        filename = sample['filename']
         images_seen+=1
         xs, ys = xs.to(device), ys.to(device)
 

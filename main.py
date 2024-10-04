@@ -293,6 +293,8 @@ def run_pipnet(args=None):
                 relevant_ps.append((p, proto_weights[p].item()))
         if args.validation_size == 0.:
             print("Class", c, "(", list(testloader.dataset.class_to_idx.keys())[list(testloader.dataset.class_to_idx.values()).index(c)],"):","has", len(relevant_ps),"relevant prototypes: ", relevant_ps, flush=True)
+    topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk_afterprune', args)
+
 
     # Evaluate prototype purity        
     if args.dataset == 'CUB-200-2011':
