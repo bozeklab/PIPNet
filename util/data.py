@@ -439,11 +439,11 @@ def create_boolean_mask(mask_img):
 
     mask = (mask - mask.min()) / (mask.max() - mask.min())
     mask = (mask * 255).astype(np.uint8)
-    max_val = np.max(mask)
-    min_val = np.min(mask)
-    max_mask = (mask == max_val)
-    min_mask = (mask == min_val)
-    bool_mask = (max_mask | ~min_mask)
+    #max_val = np.max(mask)
+    #min_val = np.min(mask)
+    #max_mask = (mask == max_val)
+    #min_mask = (mask == min_val)
+    bool_mask = mask > 100
     return torch.tensor(bool_mask)
 
 
