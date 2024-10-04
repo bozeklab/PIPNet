@@ -4,6 +4,10 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 import torch.utils.data
+import cv2
+from util.vis_pipnet import get_img_coordinates
+import matplotlib.pyplot as plt
+import numpy as np
 import os
 from PIL import Image, ImageDraw as D
 import torchvision.transforms as transforms
@@ -429,6 +433,17 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
+
+                    heatmap = cv2.applyColorMap(np.uint8(255 * softmaxes_np), cv2.COLORMAP_JET)
+                    heatmap = np.float32(heatmap) / 255
+                    heatmap = heatmap[..., ::-1]  # OpenCV's BGR to RGB
+                    heatmap_img = 0.2 * np.float32(heatmap) + 0.6 * np.float32(
+                        img_tensor.squeeze().numpy().transpose(1, 2, 0))
+                    plt.imsave(fname=os.path.join(save_path, 'p%s_%s_%s_%s_heat' % (str(p), str(imglabel),
+                                                                                    str(round(found_max, 2)),
+                                                                                    str(img_to_open.split('/')[
+                                                                                            -1].split('.jpg')[0]))),
+                               arr=heatmap_img, vmin=0.0, vmax=1.0)
 
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
                     if num_white_pixels >= 100:
