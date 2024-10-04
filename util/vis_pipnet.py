@@ -442,11 +442,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     heatmap = heatmap[..., ::-1]  # OpenCV's BGR to RGB
                     heatmap_img = 0.2 * np.float32(heatmap) + 0.6 * np.float32(
                         img_tensor.squeeze().numpy().transpose(1, 2, 0))
-                    plt.imsave(fname=os.path.join(save_path, 'p%s_%s_%s_%s_heat' % (str(p), str(imglabel),
-                                                                                    str(round(found_max, 2)),
-                                                                                    str(img_to_open.split('/')[
-                                                                                            -1].split('.jpg')[0]))),
-                               arr=heatmap_img, vmin=0.0, vmax=1.0)
+
 
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
                     if num_white_pixels >= 100:
@@ -465,6 +461,12 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     draw = D.Draw(output)
                     draw.rectangle([(w_coor_min, h_coor_min), (w_coor_max, h_coor_max)], outline=boundary_color, width=2)
                     output.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
+
+                    plt.imsave(fname=os.path.join(save_path, 'p%s_%s_%s_%s_heat' % (str(p), str(imglabel),
+                                                                                    str(round(found_max, 2)),
+                                                                                    str(img_to_open.split('/')[
+                                                                                            -1].split('.jpg')[0]))),
+                               arr=heatmap_img, vmin=0.0, vmax=1.0)
 
         images_seen_before+=len(ys)
 
