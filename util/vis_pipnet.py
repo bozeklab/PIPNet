@@ -2,6 +2,9 @@ from tqdm import tqdm
 import argparse
 import torch
 import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 import torch.nn.functional as F
 import torch.utils.data
 import os
@@ -434,6 +437,16 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     save_path = os.path.join(dir, "prototype_%s")%str(p)
                     if not os.path.exists(save_path):
                         os.makedirs(save_path)
+
+                    softmaxes_resized = transforms.ToPILImage()(softmaxes[0, pidx, :, :])
+                    softmaxes_resized = softmaxes_resized.resize((img_size , img_size ),Image.BICUBIC)
+                    softmaxes_np = (transforms.ToTensor()(softmaxes_resized)).squeeze().numpy()
+
+                    heatmap = cv2.applyColorMap(np.uint8(255*softmaxes_np), cv2.COLORMAP_JET)
+                    heatmap = np.float32(heatmap)/255
+                    heatmap = heatmap[...,::-1] # OpenCV's BGR to RGB
+                    heatmap_img = 0.2 * np.float32(heatmap) + 0.6 * np.float32(img_tensor.squeeze().numpy().transpose(1,2,0))
+                    plt.imsave(fname=os.path.join(save_path, 'p%s_%s_%s_%s_heat.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
 
                     msk_tensor = transforms.ToTensor()(mask)
                     img_tensor = (transforms.ToTensor()(image) * 255).int()
