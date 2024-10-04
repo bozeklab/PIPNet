@@ -462,7 +462,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     draw.rectangle([(w_coor_min, h_coor_min), (w_coor_max, h_coor_max)], outline=boundary_color, width=2)
                     output.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
 
-                    plt.imsave(fname=os.path.join(save_path, 'p%s_%s_%s_%s_heat' % (str(p), str(imglabel),
+                    plt.imsave(fname=os.path.join(save_path, 'p%s_%s_%s_%s_heat.png' % (str(p), str(imglabel),
                                                                                     str(round(found_max, 2)),
                                                                                     str(img_to_open.split('/')[
                                                                                             -1].split('.jpg')[0]))),
