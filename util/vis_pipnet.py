@@ -103,7 +103,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                     ncols=0)
     for i, sample in img_iter: #shuffle is false so should lead to same order as in imgs
         xs, ys = sample['image']
-        filename = sample['filename']
+        filename = sample['filename'][0]
         if i in alli:
             xs, ys = xs.to(device), ys.to(device)
             for p in topks.keys():
