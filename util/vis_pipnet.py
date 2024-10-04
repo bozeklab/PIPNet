@@ -11,13 +11,44 @@ import torchvision.transforms as transforms
 import torchvision
 from util.func import get_patch_size
 import random
+import os
+import glob
+from PIL import Image, ImageDraw as D
+import torchvision.transforms as transforms
+import torchvision
+import torch
+import torchvision.transforms.functional as F
+import numpy as np
+
+
+def create_boolean_mask(mask_img):
+    mask_img = F.rgb_to_grayscale(mask_img)
+    m_shape = mask_img.shape
+    if len(m_shape) == 3:
+        mask_img=mask_img.squeeze()
+    else:
+        mask_img=mask_img[:, 0, :, :]
+    mask = mask_img.numpy()
+    if mask.max() - mask.min() < 0.0001:
+        return torch.zeros(mask_img.shape).bool()
+
+    mask = (mask - mask.min()) / (mask.max() - mask.min())
+    mask = (mask * 255).astype(np.uint8)
+    #max_val = np.max(mask)
+    #min_val = np.min(mask)
+    #max_mask = (mask == max_val)
+    #min_mask = (mask == min_val)
+    bool_mask = mask > 100
+    return torch.tensor(bool_mask)
 
 @torch.no_grad()                    
-def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=5):
+def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=5, compute_jaccard=False):
     print("Visualizing prototypes for topk...", flush=True)
     dir = os.path.join(args.log_dir, foldername)
     if not os.path.exists(dir):
         os.makedirs(dir)
+
+    jaccard = []
 
     near_imgs_dirs = dict()
     seen_max = dict()
@@ -153,6 +184,10 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 mask_tensor = mask_tensor[:, h_coor_min:h_coor_max,
                                               w_coor_min:w_coor_max]
 
+                                bool_mask = create_boolean_mask(mask_tensor)
+                                num_white_pixels = torch.sum(bool_mask).item()
+                                jaccard.append(num_white_pixels / (bool_mask.shape[0] * bool_mask.shape[1]))
+
                                 img_tensor_patch = 0.6 * img_tensor_patch + 0.4 * mask_tensor
                                 #font_size = 50
                                 #font = ImageFont.truetype("arial.ttf", font_size)
@@ -196,6 +231,10 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_all.png"))
     else:
         print("Pretrained prototypes not visualized. Try to pretrain longer.", flush=True)
+
+    if compute_jaccard:
+        import statistics
+        print('Jaccard: ', statistics.mean(jaccard))
     return topks
         
 
