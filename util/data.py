@@ -4,6 +4,7 @@ import argparse
 import torch
 import torch.optim
 import torch.utils.data
+import os
 import torchvision
 import torchvision.transforms as transforms
 from typing import Tuple, Dict
