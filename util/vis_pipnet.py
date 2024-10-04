@@ -145,7 +145,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(args.image_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
 
-                                mask_filename = f"mask_{filename}.png"
+                                mask_filename = f"mask_{filename}"
                                 mask_path = os.path.join('/data/pwojcik/mito_work/dataset_512_all/', mask_filename)
                                 mask = Image.open(mask_path).convert("RGB")
                                 mask = transforms.Resize((448, 448))(mask)
