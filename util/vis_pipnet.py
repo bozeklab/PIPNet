@@ -142,7 +142,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
 
                                 font_size = 50
-                                font = ImageFont.truetype("arial.ttf", font_size)
+                                #font = ImageFont.truetype("arial.ttf", font_size)
 
                                 to_pil = transforms.ToPILImage()
                                 pil_image = to_pil(img_tensor_patch)
