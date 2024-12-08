@@ -25,7 +25,7 @@ def get_data(args: argparse.Namespace):
     if args.dataset == 'partimagenet': #use --validation_size of 0.2
         return get_partimagenet(True, './data/partimagenet/dataset/all', './data/partimagenet/dataset/all', None, args.image_size, args.seed, args.validation_size) 
     if args.dataset == 'CARS':
-        return get_cars(True, './data/cars/dataset/train', './data/cars/dataset/train', './data/cars/dataset/test', args.image_size, args.seed, args.validation_size)
+        return get_cars(True, '/data/pwojcik/PlantDoc-Dataset/train/', '/data/pwojcik/PlantDoc-Dataset/train/', '/data/pwojcik/PlantDoc-Dataset/test/', args.image_size, args.seed, args.validation_size)
     if args.dataset == 'grayscale_example':
         return get_grayscale(True, '/data/pwojcik/mnist_ds/train', '/data/pwojcik/mnist_ds/train', '/data/pwojcik/mnist_ds/test', args.image_size, args.seed, args.validation_size)
     raise Exception(f'Could not load data set, data set "{args.dataset}" not found!')
