@@ -291,6 +291,8 @@ def run_pipnet(args=None):
         for p in range(net.module._classification.weight.shape[1]):
             if proto_weights[p]> 1e-3:
                 relevant_ps.append((p, proto_weights[p].item()))
+        print('!!!')
+        print(list(testloader.dataset.class_to_idx.keys()))
         if args.validation_size == 0.:
             print("Class", c, "(", list(testloader.dataset.class_to_idx.keys())[list(testloader.dataset.class_to_idx.values()).index(c)],"):","has", len(relevant_ps),"relevant prototypes: ", relevant_ps, flush=True)
 
