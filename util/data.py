@@ -139,6 +139,7 @@ def get_dataloaders(args: argparse.Namespace, device):
                                                 worker_init_fn=np.random.seed(args.seed),
                                                 drop_last=False
                                                 )
+    print('!!! testset size': len(testset))
     testloader = torch.utils.data.DataLoader(testset,
                                              batch_size=args.batch_size,
                                              shuffle=True,
