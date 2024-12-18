@@ -88,6 +88,7 @@ def eval_pipnet(net,
     print("PIP-Net abstained from a decision for", abstained.item(), "images", flush=True)            
     info['num non-zero prototypes'] = torch.gt(net.module._classification.weight,1e-3).any(dim=0).sum().item()
     print("sparsity ratio: ", (torch.numel(net.module._classification.weight)-torch.count_nonzero(torch.nn.functional.relu(net.module._classification.weight-1e-3)).item()) / torch.numel(net.module._classification.weight), flush=True)
+    print("Confusion matrix: ", cm, flush=True)
     info['confusion_matrix'] = cm
     info['test_accuracy'] = acc_from_cm(cm)
     info['top1_accuracy'] = global_top1acc/len(test_loader.dataset)
