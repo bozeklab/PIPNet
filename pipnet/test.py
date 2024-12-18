@@ -44,7 +44,7 @@ def eval_pipnet(net,
     # Iterate through the test set
     for i, (xs, xs_ds, m, m_ds, ys) in test_iter:
         xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
-        
+        print('iter ', i)
         with torch.no_grad():
             net.module._classification.weight.copy_(torch.clamp(net.module._classification.weight.data - 1e-3, min=0.)) 
             # Use the model to classify this batch of input data
