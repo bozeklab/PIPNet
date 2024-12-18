@@ -34,6 +34,7 @@ def eval_pipnet(net,
     y_preds = []
     y_preds_classes = []
     abstained = 0
+    print('!!! ', len(test_loader))
     # Show progress on progress bar
     test_iter = tqdm(enumerate(test_loader),
                         total=len(test_loader),
