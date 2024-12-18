@@ -41,7 +41,7 @@ def eval_pipnet(net,
                         desc=progress_prefix+' %s'%epoch,
                         mininterval=5.,
                         ncols=0)
-    (xs, xs_ds, m, m_ds, ys) = next(iter(test_loader))
+    #(xs, xs_ds, m, m_ds, ys) = next(iter(test_loader))
     # Iterate through the test set
     for i, (xs, xs_ds, m, m_ds, ys) in test_iter:
         xs, xs_ds, ys = xs.to(device), xs_ds.to(device), ys.to(device)
