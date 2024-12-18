@@ -67,7 +67,7 @@ def eval_pipnet(net,
             # Update the confusion matrix
             cm_batch = np.zeros((net.module._num_classes, net.module._num_classes), dtype=int)
             for y_pred, y_true in zip(ys_pred, ys):
-                print(y_pred.shape, y_pred.shape)
+                print('pred true', y_pred.shape, y_true.shape)
                 cm[y_true][y_pred] += 1
                 cm_batch[y_true][y_pred] += 1
             acc = acc_from_cm(cm_batch)
