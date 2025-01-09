@@ -152,6 +152,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                           #font=font,
                                           anchor='mm', fill="red")
                                 txttensor = transforms.ToTensor()(pil_image)
+                                print('!!! ', txttensor.shape)
 
                                 saved[p]+=1
                                 tensors_per_prototype[p].append(txttensor)
