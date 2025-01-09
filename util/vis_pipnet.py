@@ -109,6 +109,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             # Use the model to classify this batch of input data
                             with torch.no_grad():
                                 softmaxes, pooled, out = net(xs, inference=True) #softmaxes has shape (1, num_prototypes, W, H)
+                                print('!!! ', pooled.shape)
                                 outmax = torch.amax(out,dim=1)[0] #shape ([1]) because batch size of projectloader is 1
                                 if outmax.item() == 0.:
                                     abstained+=1
@@ -152,7 +153,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                           #font=font,
                                           anchor='mm', fill="red")
                                 txttensor = transforms.ToTensor()(pil_image)
-                                print('!!! ', txttensor.shape)
+                                #print('!!! ', txttensor.shape)
 
                                 saved[p]+=1
                                 tensors_per_prototype[p].append(txttensor)
