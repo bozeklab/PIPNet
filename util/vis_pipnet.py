@@ -60,15 +60,19 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             # Use the model to classify this batch of input data
             pfs, pooled, _ = net(xs, inference=True)
             pooled = pooled.squeeze(0) 
-            pfs = pfs.squeeze(0) 
+            pfs = pfs.squeeze(0)
             
             for p in range(pooled.shape[0]):
                 c_weight = torch.max(classification_weights[:,p])
                 print('c_weight ', c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
+                    pfs = pfs[p].view(-1)
+
+                    print('!!! ', pfs.shape)
+
                     if p not in topks.keys():
                         topks[p] = []
-                        
+
                     if len(topks[p]) < k:
                         topks[p].append((i, pooled[p].item()))
                     else:
