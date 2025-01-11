@@ -6,11 +6,29 @@ import torch.utils.data
 import os
 import pickle
 import numpy as np
+import io
+import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw as D
 import torchvision.transforms as transforms
 import torchvision
 from util.func import get_patch_size
 import random
+
+
+def visualize_dist(data, y):
+    x = range(len(data))
+    plt.figure(figsize=(10, 6))
+    plt.bar(x, data.numpy(), color='blue', alpha=0.7)
+    plt.xlabel('position')
+    plt.ylabel('strength')
+
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
+    plt.close()
+    img_buffer.seek(0)
+    image = Image.open(img_buffer)
+    return image
+
 
 @torch.no_grad()                    
 def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=10):
@@ -66,7 +84,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                 c_weight = torch.max(classification_weights[:,p])
                 print('c_weight ', c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
-                    print('!!! ', pfs[p].view(-1).shape)
+                    p_x = visualize_dist(pfs[p].view(-1), y)
 
                     if p not in topks.keys():
                         topks[p] = []
