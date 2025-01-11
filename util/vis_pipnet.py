@@ -70,6 +70,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     images_seen = 0
     topks = dict()
     # Iterate through the training set
+    img_dist = {}
     for i, (xs, ys) in img_iter:
         images_seen+=1
         xs, ys = xs.to(device), ys.to(device)
@@ -85,7 +86,10 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                 print('c_weight ', c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
                     #p_x = visualize_dist(pfs[p].view(-1).cpu(), ys)
-
+                    if i not in img_dist.keys():
+                        img_dist[i] = []
+                    else:
+                        img_dist[i].append(pfs[p].view(-1).cpu())
                     if p not in topks.keys():
                         topks[p] = []
 
