@@ -66,9 +66,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                 c_weight = torch.max(classification_weights[:,p])
                 print('c_weight ', c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
-                    pfs = pfs[p].view(-1)
-
-                    print('!!! ', pfs.shape)
+                    print('!!! ', pfs[p].view(-1).shape)
 
                     if p not in topks.keys():
                         topks[p] = []
