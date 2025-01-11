@@ -63,7 +63,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             pfs = pfs.squeeze(0) 
             
             for p in range(pooled.shape[0]):
-                c_weight = torch.max(classification_weights[:,p]) 
+                c_weight = torch.max(classification_weights[:,p])
+                print('c_weight ', c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
                     if p not in topks.keys():
                         topks[p] = []
@@ -133,8 +134,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
 
                                 npy_path = os.path.splitext(os.path.basename(img_to_open))[0]
                                 softmaxes = softmaxes.cpu().numpy()
-                                with open(os.path.join(dir, f'{npy_path}.pkl'), 'wb') as f:
-                                    pickle.dump(softmaxes, f)
+                                #with open(os.path.join(dir, f'{npy_path}.pkl'), 'wb') as f:
+                                #    pickle.dump(softmaxes, f)
 
 
                                 image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open))
