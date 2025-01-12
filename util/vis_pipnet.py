@@ -134,7 +134,10 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     for dist_id, dist in enumerate(selected_dists):
         y = dist[1][1]
         print('!!! ', len(dist[1][0]))
-        grid_image = build_image_grid(dist[1])
+        dist_ps = []
+        for d in dist[1][0]:
+            dist_ps.append(dist_ps.append(visualize_dist(d)))
+        grid_image = build_image_grid(dist_ps)
         #save_path = os.path.join(dir,  f"{dist_id}_grid_{y}.png")
         #grid_image.save(save_path)
 
