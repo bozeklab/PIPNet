@@ -136,7 +136,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         print('!!! ', len(dist[1][0]))
         dist_ps = []
         for d in dist[1][0]:
-            print(dist)
+            print(d)
             dist_ps.append(visualize_dist(d))
         grid_image = build_image_grid(dist_ps)
         #save_path = os.path.join(dir,  f"{dist_id}_grid_{y}.png")
