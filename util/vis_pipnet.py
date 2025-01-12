@@ -132,7 +132,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     print('Creating distribution patterns...')
     selected_dists = random.sample(list(img_dist.items()), 10)
     for dist_id, dist in enumerate(selected_dists):
-        y = dist[1][1]
+        y = dist[1][0][1]
+        print('y ', y)
         #print('!!!! ', dist[0])
         #print('!!! ', len(dist[1][0]))
         dist_ps = []
