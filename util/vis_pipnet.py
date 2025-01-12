@@ -133,6 +133,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     selected_dists = random.sample(list(img_dist.items()), 10)
     for dist_id, dist in enumerate(selected_dists):
         y = dist[1][1]
+        print('!!! ', dist[0])
         print('!!! ', len(dist[1][0]))
         dist_ps = []
         for d in dist[1][0]:
