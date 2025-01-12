@@ -107,7 +107,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 topks[p][-1] = (i, pooled[p].item())
     selected_dists = random.sample(list(img_dist.items()), 10)
     for dist in selected_dists:
-        print('len ', len(dist))
+        print('len ', len(dist[1]))
     alli = []
     prototypes_not_used = []
     for p in topks.keys():
