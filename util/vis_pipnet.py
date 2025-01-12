@@ -19,8 +19,9 @@ def visualize_dist(data, y):
     x = range(len(data))
     plt.figure(figsize=(10, 6))
     plt.bar(x, data.numpy(), color='blue', alpha=0.7)
-    plt.xlabel('position')
-    plt.ylabel('strength')
+    #plt.xlabel('position')
+    #plt.ylabel('strength')
+    #plt.title(f'Class {y}', y)
 
     img_buffer = io.BytesIO()
     plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
@@ -85,12 +86,11 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                 c_weight = torch.max(classification_weights[:,p])
                 print('c_weight ', c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
-                    print('!!! ', ys)
                     #p_x = visualize_dist(pfs[p].view(-1).cpu(), ys)
                     if i not in img_dist.keys():
                         img_dist[i] = []
                     else:
-                        img_dist[i].append(pfs[p].view(-1).cpu())
+                        img_dist[i].append((pfs[p].view(-1).cpu(), ys.cpu().item()))
                     if p not in topks.keys():
                         topks[p] = []
 
@@ -136,7 +136,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             # Use the model to classify this batch of input data
                             with torch.no_grad():
                                 softmaxes, pooled, out = net(xs, inference=True) #softmaxes has shape (1, num_prototypes, W, H)
-                                print('!!! ', pooled.shape, softmaxes.shape)
+                                #print('!!! ', pooled.shape, softmaxes.shape)
                                 outmax = torch.amax(out,dim=1)[0] #shape ([1]) because batch size of projectloader is 1
                                 if outmax.item() == 0.:
                                     abstained+=1
@@ -161,7 +161,6 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                                 softmaxes = softmaxes.cpu().numpy()
                                 #with open(os.path.join(dir, f'{npy_path}.pkl'), 'wb') as f:
                                 #    pickle.dump(softmaxes, f)
-
 
                                 image = transforms.Resize(size=(args.image_size, args.image_size))(Image.open(img_to_open))
                                 image = transforms.Grayscale(3)(image)
