@@ -132,9 +132,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     print('Creating distribution patterns...')
     selected_dists = random.sample(list(img_dist.items()), 10)
     for dist_id, dist in enumerate(selected_dists):
-        y = dist[0]
-        print('!!! ', y, y.shape)
-        grid_image = build_image_grid(dist[1])
+        y = dist[1]
+        grid_image = build_image_grid(dist[0])
         #save_path = os.path.join(dir,  f"{dist_id}_grid_{y}.png")
         #grid_image.save(save_path)
 
