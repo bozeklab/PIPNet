@@ -31,6 +31,30 @@ def visualize_dist(data, y):
     return image
 
 
+def build_image_grid(images):
+    grid_size = int(np.ceil(np.sqrt(len(images))))
+    fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
+
+    # Plot each image in the grid
+    for i, ax in enumerate(axes.flat):
+        if i < len(images):
+            ax.imshow(images[i], cmap='gray')  # Display image (replace cmap if not grayscale)
+            ax.axis('off')  # Turn off axes
+        else:
+            ax.axis('off')  # Turn off unused axes for empty spaces
+
+    # Render the grid to a BytesIO buffer
+    img_buffer = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
+    plt.close()
+    img_buffer.seek(0)
+
+    # Load the rendered image from the buffer
+    grid_image = Image.open(img_buffer)
+    return grid_image
+
+
 @torch.no_grad()                    
 def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=10):
     print("Visualizing prototypes for topk...", flush=True)
@@ -106,8 +130,12 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             if replace_choice > 0:
                                 topks[p][-1] = (i, pooled[p].item())
     selected_dists = random.sample(list(img_dist.items()), 10)
-    for dist in selected_dists:
-        print('len ', len(dist[1]))
+    for dist_id, dist in enumerate(selected_dists):
+        y = dist[0]
+        grid_image = build_image_grid(dist[1])
+        save_path = os.path.join(dir,  f"{dist_id}_grid_{y}.png")
+        grid_image.save(save_path)
+
     alli = []
     prototypes_not_used = []
     for p in topks.keys():
