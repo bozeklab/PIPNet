@@ -71,7 +71,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
     images_seen = 0
     topks = dict()
     # Iterate through the training set
-    img_dist = {}
+    img_dist = dict()
     for i, (xs, ys) in img_iter:
         images_seen+=1
         xs, ys = xs.to(device), ys.to(device)
@@ -105,7 +105,9 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             replace_choice = random.choice([0, 1])
                             if replace_choice > 0:
                                 topks[p][-1] = (i, pooled[p].item())
-
+    selected_dists = random.sample(list(img_dist.items()), 10)
+    for dist in selected_dists:
+        print('len ', len(dist))
     alli = []
     prototypes_not_used = []
     for p in topks.keys():
