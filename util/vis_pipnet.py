@@ -15,7 +15,7 @@ from util.func import get_patch_size
 import random
 
 
-def visualize_dist(data, y):
+def visualize_dist(data):
     x = range(len(data))
     plt.figure(figsize=(10, 6))
     plt.bar(x, data.numpy(), color='blue', alpha=0.7)
@@ -108,7 +108,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             
             for p in range(pooled.shape[0]):
                 c_weight = torch.max(classification_weights[:,p])
-                print('c_weight ', c_weight)
+                #print('c_weight ', c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
                     #p_x = visualize_dist(pfs[p].view(-1).cpu(), ys)
                     if i not in img_dist.keys():
@@ -129,12 +129,13 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             replace_choice = random.choice([0, 1])
                             if replace_choice > 0:
                                 topks[p][-1] = (i, pooled[p].item())
+    print('Creating distribution patterns...')
     selected_dists = random.sample(list(img_dist.items()), 10)
     for dist_id, dist in enumerate(selected_dists):
         y = dist[0]
         grid_image = build_image_grid(dist[1])
-        save_path = os.path.join(dir,  f"{dist_id}_grid_{y}.png")
-        grid_image.save(save_path)
+        #save_path = os.path.join(dir,  f"{dist_id}_grid_{y}.png")
+        #grid_image.save(save_path)
 
     alli = []
     prototypes_not_used = []
