@@ -99,6 +99,21 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     
     return train_info
 
+
+def CKA(self, kernel):
+    index = torch.triu_indices(kernel.shape[0], kernel.shape[0], 1)
+    nominator = self.unbiased_HSIC(kernel[index[0]], kernel[index[1]])
+    denominator1 = self.unbiased_HSIC(kernel[index[0]], kernel[index[0]])
+    denominator2 = self.unbiased_HSIC(kernel[index[1]], kernel[index[1]])
+    denominator1 = torch.nn.functional.relu(denominator1)
+    denominator2 = torch.nn.functional.relu(denominator2)
+    denominator = denominator1 * denominator2
+    # prevent divide 0
+    # mask = (denominator != 0)
+    cka = (nominator) / torch.sqrt(torch.clamp(denominator, min = 1e-16))
+    return cka
+
+
 def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
@@ -112,7 +127,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
-        loss += t_weight * tanh_loss
+        #loss += t_weight * tanh_loss
     
     if not pretrain:
         softmax_inputs = torch.log1p(out**net_normalization_multiplier)
