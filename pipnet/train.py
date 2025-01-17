@@ -6,6 +6,9 @@ import torch.nn as nn
 import torch.utils.data
 import math
 
+from pipnet.cka_loss import CKA_loss
+
+
 def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch'):
 
     # Make sure the model is in train mode
@@ -102,78 +105,6 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     return train_info
 
 
-class CKA_loss(nn.Module):
-    def __init__(self, concept_cha):
-        super(CKA_loss, self).__init__()
-        self.concept_cha = concept_cha
-
-    def __repr__(self):
-        basic = super().__repr__()
-        str_show = f"{basic[:-1]}concept_cha={self.concept_cha})"
-        return str_show
-
-    def unbiased_HSIC(self, x, y):
-        # create the unit **vector** filled with ones
-        n = x.shape[1]
-        ones = torch.ones(x.shape[0], n, 1).cuda()
-
-        # fill the diagonal entries with zeros
-        # mask = torch.eye(n).repeat(x.shape[0], 1, 1).bool().cuda()
-        mask = torch.eye(n).unsqueeze(0).cuda()
-        x = x * (1 - mask)
-        y = y * (1 - mask)
-
-        # first part in the square brackets
-        trace = torch.sum(torch.matmul(x, y.permute(0, 2, 1)) * mask, dim=(-1, -2), keepdim=True)
-
-        # middle part in the square brackets
-        nominator1 = torch.sum(x, dim=(-2, -1), keepdim=True)
-        nominator2 = torch.sum(y, dim=(-2, -1), keepdim=True)
-        denominator = (n - 1) * (n - 2)
-        middle = torch.matmul(nominator1, nominator2) / denominator
-
-        # third part in the square brackets
-        multiplier1 = 2 / (n - 2)
-        multiplier2 = torch.matmul(torch.matmul(ones.permute(0, 2, 1), x), torch.matmul(y, ones))
-        last = multiplier1 * multiplier2
-
-        # complete equation
-        unbiased_hsic = 1 / (n * (n - 3)) * (trace + middle - last)
-        return unbiased_hsic
-
-    def CKA(self, kernel):
-        index = torch.triu_indices(kernel.shape[0], kernel.shape[0], 1)
-        nominator = self.unbiased_HSIC(kernel[index[0]], kernel[index[1]])
-        denominator1 = self.unbiased_HSIC(kernel[index[0]], kernel[index[0]])
-        denominator2 = self.unbiased_HSIC(kernel[index[1]], kernel[index[1]])
-        denominator1 = torch.nn.functional.relu(denominator1)
-        denominator2 = torch.nn.functional.relu(denominator2)
-        denominator = denominator1 * denominator2
-        # prevent divide 0
-        # mask = (denominator != 0)
-        cka = (nominator) / torch.sqrt(torch.clamp(denominator, min=1e-16))
-        return cka
-
-    def forward(self, feature_map):
-        # calculate the concept number and channel number of each concept
-
-        CKA_loss = 0
-        #concept_num = concept_blocks.shape[1] // self.concept_cha[layer_i]
-        cha_per_con = 1#self.concept_cha[layer_i]
-        B, C, H, W = feature_map.shape
-        sorted = []
-        for p in range(C):
-            pf = feature_map[:, p, :, :]
-            pf, _ = torch.sort(pf.view(B, H*W), dim=1)
-            pf = pf.view(B, 1, H, W)
-            sorted.append(pf)
-        sorted = torch.cat(sorted, dim=1)
-        concept_blocks = torch.flatten(sorted.reshape(B, C, cha_per_con, H, W).permute(1, 0, 2, 3, 4), 2)
-        concept_blocks_kernel = torch.matmul(concept_blocks, concept_blocks.permute(0, 2, 1))
-        CKA_loss = CKA_loss + torch.mean(torch.abs(self.CKA(concept_blocks_kernel)))
-        return CKA_loss
-
-
 def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
@@ -185,7 +116,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     a_loss_pf = (align_loss(embv1, embv2.detach())+ align_loss(embv2, embv1.detach()))/2.
     tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
-    cka = CKA_loss(1)
+    cka = CKA_loss(concept_cha=1)
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
