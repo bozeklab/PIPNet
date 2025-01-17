@@ -2,7 +2,6 @@ from tqdm import tqdm
 import torch
 import torch.nn.functional as F
 import torch.optim
-import torch.nn as nn
 import torch.utils.data
 import math
 
@@ -70,7 +69,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         # Perform a forward pass through the network
         proto_features, pooled, out = net(torch.cat([xs1, xs2]))
         #print('!!! ', proto_features.shape)
-        loss, acc = calculate_loss(proto_features, pooled, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight, net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
+        loss, acc = calculate_loss(proto_features, pooled, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight, net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-8)
         
         # Compute the gradient
         loss.backward()
@@ -105,7 +104,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     return train_info
 
 
-def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-10):
+def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-10):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
     pf1, pf2 = proto_features.chunk(2)
@@ -117,7 +116,6 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
     cka = CKA_loss(concept_cha=1)
-    print('cka !! ', cka)
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
@@ -143,7 +141,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         ys_pred_max = torch.argmax(out, dim=1)
         correct = torch.sum(torch.eq(ys_pred_max, ys))
         acc = correct.item() / float(len(ys))
-    if print: 
+    if print_db:
         with torch.no_grad():
             if pretrain:
                 train_iter.set_postfix_str(
