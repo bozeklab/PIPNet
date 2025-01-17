@@ -119,7 +119,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
-        #loss += t_weight * tanh_loss
+        loss += t_weight * tanh_loss
         ck_loss = cka.forward(feature_map=pf1) + cka.forward(feature_map=pf2)
         loss += 0.1 * ck_loss
         #print(ck_loss, tanh_loss, t_weight * tanh_loss)
@@ -146,7 +146,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         with torch.no_grad():
             if pretrain:
                 train_iter.set_postfix_str(
-                f'L: {loss.item():.3f}, LA:{a_loss_pf.item():.2f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}',refresh=False)
+                f'L: {loss.item():.3f}, LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}',refresh=False)
             else:
                 if finetune:
                     train_iter.set_postfix_str(
