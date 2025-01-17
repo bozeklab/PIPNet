@@ -161,7 +161,14 @@ class CKA_loss(nn.Module):
         #concept_num = concept_blocks.shape[1] // self.concept_cha[layer_i]
         cha_per_con = 1#self.concept_cha[layer_i]
         B, C, H, W = feature_map.shape
-        concept_blocks = torch.flatten(feature_map.reshape(B, C, cha_per_con, H, W).permute(1, 0, 2, 3, 4), 2)
+        sorted = []
+        for p in range(C):
+            pf = feature_map[:, p, :, :]
+            pf, _ = torch.sort(pf.view(B, H*W), dim=1)
+            pf = pf.view(B, 1, H, W)
+            sorted.append(pf)
+        sorted = torch.cat(sorted, dim=1)
+        concept_blocks = torch.flatten(sorted.reshape(B, C, cha_per_con, H, W).permute(1, 0, 2, 3, 4), 2)
         concept_blocks_kernel = torch.matmul(concept_blocks, concept_blocks.permute(0, 2, 1))
         CKA_loss = CKA_loss + torch.mean(torch.abs(self.CKA(concept_blocks_kernel)))
         return CKA_loss
@@ -178,13 +185,12 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     a_loss_pf = (align_loss(embv1, embv2.detach())+ align_loss(embv2, embv1.detach()))/2.
     tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
-    print('!!! ', proto_features.shape)
-    ##CKA = CKA_loss()
-
+    cka = CKA_loss(1)
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
         loss += t_weight * tanh_loss
+        print(cka(pf1))
     
     if not pretrain:
         softmax_inputs = torch.log1p(out**net_normalization_multiplier)
