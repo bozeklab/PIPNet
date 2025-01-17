@@ -119,9 +119,10 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
-        loss += t_weight * tanh_loss
+        #loss += t_weight * tanh_loss
         ck_loss = cka.forward(feature_map=pf1)
-        print(ck_loss, tanh_loss, t_weight * tanh_loss)
+        loss += 0.1 * ck_loss
+        #print(ck_loss, tanh_loss, t_weight * tanh_loss)
     
     if not pretrain:
         softmax_inputs = torch.log1p(out**net_normalization_multiplier)
