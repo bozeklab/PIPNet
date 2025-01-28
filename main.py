@@ -149,7 +149,7 @@ def run_pipnet(args=None):
             wshape = proto_features.shape[-1]
             for i in range(xs1.size(0)):
                 if ys[i] == 0:
-                    class_0_features.append(proto_features[i].flatten(1))
+                    class_0_features.append(proto_features[i].flatten(1).permute(1, 0))
                     print(id, ' ', class_0_features[-1].shape)
             args.wshape = wshape  # needed for calculating image patch size
             #print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
