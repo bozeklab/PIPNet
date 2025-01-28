@@ -137,7 +137,7 @@ def run_pipnet(args=None):
     idx = 0
     with torch.no_grad():
         while idx < 50:
-            xs1, _, ys = next(trainloader)
+            xs1, _, ys = next(trainloader_iter)
             print(idx, ' ')
             idx += 1
             xs1 = xs1.to(device)
