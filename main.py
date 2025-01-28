@@ -145,6 +145,7 @@ def run_pipnet(args=None):
             args.wshape = wshape  # needed for calculating image patch size
             print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
 
+    print('Concat')
     class_0_features = torch.cat(class_0_features, dim=0)
     print(f"Concatenated class_0_features shape: {class_0_features.shape}")
 
