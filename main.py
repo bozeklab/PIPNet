@@ -172,7 +172,7 @@ def run_pipnet(args=None):
         plt.ylabel("t-SNE dimension 2")
 
         # Save the plot to a file
-        plt.savefig("class_0_tsne_plot.png")
+        plt.savefig("birds_class_0_tsne_plot.png")
 
         # Optionally close the plot to free up resources
         plt.close()
