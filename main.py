@@ -130,6 +130,14 @@ def run_pipnet(args=None):
         wshape = proto_features.shape[-1]
         args.wshape = wshape #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
+
+    with torch.no_grad():
+        for xs1, _, ys in trainloader:
+            xs1 = xs1.to(device)
+            proto_features, _, _ = net(xs1)
+            wshape = proto_features.shape[-1]
+            args.wshape = wshape  # needed for calculating image patch size
+            print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
     
     if net.module._num_classes == 2:
         # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch
@@ -265,7 +273,7 @@ def run_pipnet(args=None):
     net.eval()
     torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained_last'))
 
-    topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
+    topks =  visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
     # set weights of prototypes that are never really found in projection set to 0
     set_to_zero = []
     if topks:

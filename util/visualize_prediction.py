@@ -69,7 +69,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                     os.makedirs(save_path)
 
                 softmaxes_cpu = softmaxes.cpu()
-                torch.save(softmaxes_cpu, os.path.join(save_path, 'sftmax.pth'))
+                #torch.save(softmaxes_cpu, os.path.join(save_path, 'sftmax.pth'))
 
                 sorted_pooled, sorted_pooled_indices = torch.sort(pooled.squeeze(0), descending=True)
                 simweights = []
