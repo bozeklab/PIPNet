@@ -19,7 +19,7 @@ def get_data(args: argparse.Namespace):
     random.seed(args.seed)
     np.random.seed(args.seed)
     if args.dataset =='CUB-200-2011':     
-        return get_birds(True, '/data/pwojcik/CUB_200_2011/dataset/train_crop', '/data/pwojcik/CUB_200_2011/dataset/train', '/data/pwojcik/CUB_200_2011/dataset/test_crop', args.image_size, args.seed, args.validation_size, './data/CUB_200_2011/dataset/train', './data/CUB_200_2011/dataset/test_full')
+        return get_birds(True, '/data/pwojcik/CUB_200_2011/dataset/train_crop', '/data/pwojcik/CUB_200_2011/dataset/train', '/data/pwojcik/CUB_200_2011/dataset/test_crop', args.image_size, args.seed, args.validation_size, '/data/pwojcik/CUB_200_2011/dataset/train', '/data/pwojcik/CUB_200_2011/dataset/test_full')
     if args.dataset == 'pets':
         return get_pets(True, './data/PETS/dataset/train','./data/PETS/dataset/train','./data/PETS/dataset/test', args.image_size, args.seed, args.validation_size)
     if args.dataset == 'partimagenet': #use --validation_size of 0.2
