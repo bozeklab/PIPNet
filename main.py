@@ -134,13 +134,13 @@ def run_pipnet(args=None):
 
     class_0_features = []
     print('!! ', len(trainloader))
-    id = 0
+    idx = 0
     with torch.no_grad():
-        while id < 50:
+        while idx < 50:
             xs1, _, ys = next(iter(trainloader))
-            print(id, ' ')
-            id = id + 1
-            if id == 49:
+            print(idx, ' ')
+            idx += 1
+            if idx == 49:
                 print('dupa')
                 break
             xs1 = xs1.to(device)
