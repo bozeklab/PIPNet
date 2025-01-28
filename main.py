@@ -12,6 +12,7 @@ from util.vis_pipnet import visualize, visualize_topk
 from util.visualize_prediction import vis_pred, vis_pred_experiments
 import sys, os
 import random
+from sklearn.manifold import TSNE
 import numpy as np
 from shutil import copy
 import matplotlib.pyplot as plt
@@ -131,7 +132,6 @@ def run_pipnet(args=None):
         args.wshape = wshape #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
 
-
     class_0_features = []
     with torch.no_grad():
         for xs1, _, ys in trainloader:
@@ -144,7 +144,30 @@ def run_pipnet(args=None):
                     print(class_0_features[-1].shape)
             args.wshape = wshape  # needed for calculating image patch size
             print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
-    
+
+    class_0_features = torch.cat(class_0_features, dim=0)
+    print(f"Concatenated class_0_features shape: {class_0_features.shape}")
+
+    # Convert to NumPy for t-SNE (sklearn uses NumPy arrays)
+    class_0_features_np = class_0_features.cpu().numpy()
+
+    # Apply t-SNE to reduce dimensionality
+    tsne = TSNE(n_components=2, random_state=42)
+    class_0_tsne = tsne.fit_transform(class_0_features_np)
+
+    # Plot the results
+    plt.figure(figsize=(8, 6))
+    plt.scatter(class_0_tsne[:, 0], class_0_tsne[:, 1], alpha=0.5)
+    plt.title("t-SNE visualization of class 0 features")
+    plt.xlabel("t-SNE dimension 1")
+    plt.ylabel("t-SNE dimension 2")
+
+    # Save the plot to a file
+    plt.savefig("class_0_tsne_plot.png")
+
+    # Optionally close the plot to free up resources
+    plt.close()
+
     if net.module._num_classes == 2:
         # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch
         log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_f1', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
