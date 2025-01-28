@@ -132,47 +132,46 @@ def run_pipnet(args=None):
         args.wshape = wshape #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
 
-    # class_0_features = []
-    # print('!! ', len(trainloader))
-    # with torch.no_grad():
-    #     for id, b in enumerate(trainloader):
-    #         print(id)
-    #         xs1, _, ys = b
-    #         xs1 = xs1.to(device)
-    #         proto_features, _, _ = net(xs1)
-    #         wshape = proto_features.shape[-1]
-    #         for i in range(xs1.size(0)):
-    #             if ys[i] == 0:
-    #                 class_0_features.append(proto_features[i].flatten(1))
-    #                 print(id, ' ', class_0_features[-1].shape)
-    #         args.wshape = wshape  # needed for calculating image patch size
-    #         if id > 50:
-    #             break
-    #         #print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
-    #
-    # print('Concat')
-    # class_0_features = torch.cat(class_0_features, dim=0)
-    # print(f"Concatenated class_0_features shape: {class_0_features.shape}")
-    #
-    # # Convert to NumPy for t-SNE (sklearn uses NumPy arrays)
-    # class_0_features_np = class_0_features.cpu().numpy()
-    #
-    # # Apply t-SNE to reduce dimensionality
-    # tsne = TSNE(n_components=2, random_state=42)
-    # class_0_tsne = tsne.fit_transform(class_0_features_np)
-    #
-    # # Plot the results
-    # plt.figure(figsize=(8, 6))
-    # plt.scatter(class_0_tsne[:, 0], class_0_tsne[:, 1], alpha=0.5)
-    # plt.title("t-SNE visualization of class 0 features")
-    # plt.xlabel("t-SNE dimension 1")
-    # plt.ylabel("t-SNE dimension 2")
-    #
-    # # Save the plot to a file
-    # plt.savefig("class_0_tsne_plot.png")
-    #
-    # # Optionally close the plot to free up resources
-    # plt.close()
+    class_0_features = []
+    print('!! ', len(trainloader))
+    with torch.no_grad():
+        for id, (xs1, _, ys) in enumerate(trainloader):
+            print(id)
+            xs1 = xs1.to(device)
+            proto_features, _, _ = net(xs1)
+            wshape = proto_features.shape[-1]
+            for i in range(xs1.size(0)):
+                if ys[i] == 0:
+                    class_0_features.append(proto_features[i].flatten(1))
+                    print(id, ' ', class_0_features[-1].shape)
+            args.wshape = wshape  # needed for calculating image patch size
+            if id > 50:
+                break
+            #print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
+
+    print('Concat')
+    class_0_features = torch.cat(class_0_features, dim=0)
+    print(f"Concatenated class_0_features shape: {class_0_features.shape}")
+
+    # Convert to NumPy for t-SNE (sklearn uses NumPy arrays)
+    class_0_features_np = class_0_features.cpu().numpy()
+
+    # Apply t-SNE to reduce dimensionality
+    tsne = TSNE(n_components=2, random_state=42)
+    class_0_tsne = tsne.fit_transform(class_0_features_np)
+
+    # Plot the results
+    plt.figure(figsize=(8, 6))
+    plt.scatter(class_0_tsne[:, 0], class_0_tsne[:, 1], alpha=0.5)
+    plt.title("t-SNE visualization of class 0 features")
+    plt.xlabel("t-SNE dimension 1")
+    plt.ylabel("t-SNE dimension 2")
+
+    # Save the plot to a file
+    plt.savefig("class_0_tsne_plot.png")
+
+    # Optionally close the plot to free up resources
+    plt.close()
 
     if net.module._num_classes == 2:
         # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch
