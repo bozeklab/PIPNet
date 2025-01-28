@@ -148,6 +148,7 @@ def run_pipnet(args=None):
             proto_features, _, _ = net(xs1)
             wshape = proto_features.shape[-1]
             for i in range(xs1.size(0)):
+                print(ys[i])
                 if ys[i] == 0:
                     class_0_features.append(proto_features[i].flatten(1).permute(1, 0))
                     print(id, ' ', class_0_features[-1].shape)
