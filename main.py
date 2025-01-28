@@ -141,6 +141,7 @@ def run_pipnet(args=None):
             print(id, ' ')
             id = id + 1
             if id == 49:
+                print('dupa')
                 break
             xs1 = xs1.to(device)
             ys = ys.to(device)
