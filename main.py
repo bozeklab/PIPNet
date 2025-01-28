@@ -132,7 +132,7 @@ def run_pipnet(args=None):
         print("Output shape: ", proto_features.shape, flush=True)
 
 
-    print(len(trainloader))
+    print('!!! ', len(trainloader))
     with torch.no_grad():
         for xs1, _, ys in trainloader:
             xs1 = xs1.to(device)
