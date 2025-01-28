@@ -140,6 +140,8 @@ def run_pipnet(args=None):
             xs1, _, ys = next(iter(trainloader))
             print(id, ' ')
             id = id + 1
+            if id == 49:
+                break
             xs1 = xs1.to(device)
             ys = ys.to(device)
             proto_features, _, _ = net(xs1)
