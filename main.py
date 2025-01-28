@@ -135,7 +135,8 @@ def run_pipnet(args=None):
     class_0_features = []
     print('!! ', len(trainloader))
     with torch.no_grad():
-        for id, xs1, _, ys in enumerate(trainloader):
+        for id, b in enumerate(trainloader):
+            xs1, _, ys = b
             xs1 = xs1.to(device)
             proto_features, _, _ = net(xs1)
             wshape = proto_features.shape[-1]
