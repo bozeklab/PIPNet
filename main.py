@@ -131,6 +131,8 @@ def run_pipnet(args=None):
         args.wshape = wshape #needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
 
+
+    print(len(trainloader))
     with torch.no_grad():
         for xs1, _, ys in trainloader:
             xs1 = xs1.to(device)
