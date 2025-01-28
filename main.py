@@ -133,7 +133,7 @@ def run_pipnet(args=None):
     #     print("Output shape: ", proto_features.shape, flush=True)
 
     class_0_features = []
-    print('!! ', len(trainloader_pretraining))
+    print('!! ', len(trainloader))
     id = 0
     with torch.no_grad():
         while id < 50:
