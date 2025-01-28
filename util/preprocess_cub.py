@@ -4,7 +4,7 @@ import numpy as np
 import time
 from PIL import Image
 
-path = './data/CUB_200_2011/'
+path = '/data/pwojcik/CUB_200_2011/'
 
 time_start = time.time()
 
