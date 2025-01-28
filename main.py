@@ -140,9 +140,6 @@ def run_pipnet(args=None):
             xs1, _, ys = next(iter(trainloader))
             print(idx, ' ')
             idx += 1
-            if idx == 49:
-                print('dupa')
-                break
             xs1 = xs1.to(device)
             ys = ys.to(device)
             proto_features, _, _ = net(xs1)
