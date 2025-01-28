@@ -133,17 +133,18 @@ def run_pipnet(args=None):
         print("Output shape: ", proto_features.shape, flush=True)
 
     class_0_features = []
+    print('!! ', len(trainloader))
     with torch.no_grad():
-        for xs1, _, ys in trainloader:
+        for id, xs1, _, ys in enumerate(trainloader):
             xs1 = xs1.to(device)
             proto_features, _, _ = net(xs1)
             wshape = proto_features.shape[-1]
             for i in range(xs1.size(0)):
                 if ys[i] == 0:
                     class_0_features.append(proto_features[i].flatten(1))
-                    print(class_0_features[-1].shape)
+                    print(id, ' ', class_0_features[-1].shape)
             args.wshape = wshape  # needed for calculating image patch size
-            print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
+            #print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
 
     print('Concat')
     class_0_features = torch.cat(class_0_features, dim=0)
