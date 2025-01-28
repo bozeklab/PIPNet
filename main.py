@@ -136,7 +136,7 @@ def run_pipnet(args=None):
     print('!! ', len(trainloader_pretraining))
     id = 0
     with torch.no_grad():
-        while id > 50:
+        while id < 50:
             xs1, _, ys = next(iter(trainloader))
             print(id, ' ')
             id = id + 1
@@ -149,8 +149,6 @@ def run_pipnet(args=None):
                     class_0_features.append(proto_features[i].flatten(1))
                     print(id, ' ', class_0_features[-1].shape)
             args.wshape = wshape  # needed for calculating image patch size
-            if id > 50:
-                break
             #print("Output shape: ", proto_features.shape, ' ys = ', ys, flush=True)
 
     print('Concat')
