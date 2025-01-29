@@ -117,6 +117,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
 
     cka = CKA_loss(concept_cha=1)
     ck_loss = cka.forward(feature_map=pf1) + cka.forward(feature_map=pf2)
+    print('!!! ', align_pf_weight*a_loss_pf, 0.1 * ck_loss)
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
