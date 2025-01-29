@@ -121,14 +121,18 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
-        loss += t_weight * t_weight * tanh_loss
-        #loss += ck_loss
+        #loss += t_weight * t_weight * tanh_loss
+        loss += ck_loss
+        print('AL loss: ', loss.item())
+        print('CK loss: ', ck_loss.item())
         #print(ck_loss, tanh_loss, t_weight * tanh_loss)
     
     if not pretrain:
         softmax_inputs = torch.log1p(out**net_normalization_multiplier)
         class_loss = criterion(F.log_softmax((softmax_inputs),dim=1),ys)
-        
+
+        print('cls loss: ', class_loss.item())
+
         if finetune:
             loss= cl_weight * class_loss
         else:
