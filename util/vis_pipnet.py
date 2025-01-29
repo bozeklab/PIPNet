@@ -298,6 +298,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
     # Iterate through the data
     images_seen_before = 0
     for i, (xs, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
+        print(i, skip_img)
         if i % skip_img == 0:
             images_seen_before+=xs.shape[0]
             continue
