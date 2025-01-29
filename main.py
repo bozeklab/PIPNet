@@ -124,13 +124,13 @@ def run_pipnet(args=None):
     scheduler_net = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_net, T_max=len(trainloader_pretraining)*args.epochs_pretrain, eta_min=args.lr_block/100., last_epoch=-1)
 
     # Forward one batch through the backbone to get the latent output size
-    # with torch.no_grad():
-    #     xs1, _, _ = next(iter(trainloader))
-    #     xs1 = xs1.to(device)
-    #     proto_features, _, _ = net(xs1)
-    #     wshape = proto_features.shape[-1]
-    #     args.wshape = wshape #needed for calculating image patch size
-    #     print("Output shape: ", proto_features.shape, flush=True)
+    with torch.no_grad():
+        xs1, _, _ = next(iter(trainloader))
+        xs1 = xs1.to(device)
+        proto_features, _, _ = net(xs1)
+        wshape = proto_features.shape[-1]
+        args.wshape = wshape #needed for calculating image patch size
+        print("Output shape: ", proto_features.shape, flush=True)
     # trainloader_iter = iter(trainloader)
     # class_0_features = []
     # #print('!! ', len(trainloader))
