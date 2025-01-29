@@ -102,11 +102,11 @@ def eval_pipnet(net,
         fn = cm[0][1]
         fp = cm[1][0]
         tn = cm[1][1]
-        print("TP: ", tp, "FN: ",fn, "FP:", fp, "TN:", tn, flush=True)
+        #print("TP: ", tp, "FN: ",fn, "FP:", fp, "TN:", tn, flush=True)
         sensitivity = tp/(tp+fn)
         specificity = tn/(tn+fp)
         print("\n Epoch",epoch, flush=True)
-        print("Confusion matrix: ", cm, flush=True)
+        #print("Confusion matrix: ", cm, flush=True)
         try:
             for classname, classidx in test_loader.dataset.class_to_idx.items(): 
                 if classidx == 0:
