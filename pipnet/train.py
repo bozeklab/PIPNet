@@ -151,10 +151,10 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
             else:
                 if finetune:
                     train_iter.set_postfix_str(
-                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, LA:{a_loss_pf.item():.2f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
+                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
                 else:
                     train_iter.set_postfix_str(
-                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, LA:{a_loss_pf.item():.2f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
+                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
     return loss, acc
 
 # Extra uniform loss from https://www.tongzhouwang.info/hypersphere/. Currently not used but you could try adding it if you want. 
