@@ -64,7 +64,7 @@ class CKA_loss(nn.Module):
         sorted = []
         for p in range(C):
             pf = feature_map[:, p, :, :]
-            pf, _ = torch.sort(pf.view(B, H*W), dim=1)
+            #pf, _ = torch.sort(pf.view(B, H*W), dim=1)
             pf = pf.view(B, 1, H, W)
             sorted.append(pf)
         sorted = torch.cat(sorted, dim=1)
@@ -72,3 +72,32 @@ class CKA_loss(nn.Module):
         concept_blocks_kernel = torch.matmul(concept_blocks, concept_blocks.permute(0, 2, 1))
         CKA_loss = CKA_loss + torch.mean(torch.abs(self.CKA(concept_blocks_kernel)))
         return CKA_loss
+
+
+def main():
+    # Set random seed for reproducibility
+    torch.manual_seed(42)
+
+    # Define concept channel sizes for different layers
+    concept_cha = [4, 8]  # Example channel sizes per concept
+
+    # Create an instance of the CKA_loss class
+    cka_loss_fn = CKA_loss(concept_cha)
+
+    # Simulate feature maps for two layers
+    B, C1, H, W = 2, 32, 7, 7  # Batch size, channels, height, width for layer 1
+
+    # Generate random feature maps for two layers
+    layer1_features = torch.randn(B, C1, H, W)
+
+    # Create a list of concept pools (one per layer)
+    concept_pools = layer1_features
+
+    # Compute the CKA loss
+    loss = cka_loss_fn(concept_pools)
+
+    print("CKA Loss:", loss.item())
+
+
+if __name__ == "__main__":
+    main()
