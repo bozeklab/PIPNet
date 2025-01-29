@@ -122,7 +122,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     if not finetune:
         loss = align_pf_weight*a_loss_pf
         #loss += t_weight * t_weight * tanh_loss
-        loss += 0.1 * ck_loss
+        loss += ck_loss
         print(ck_loss, tanh_loss, t_weight * tanh_loss)
     
     if not pretrain:
