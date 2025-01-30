@@ -166,7 +166,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         if i in alli:
             xs, ys = xs.to(device), ys.to(device)
             for p in topks.keys():
-                print(p)
+                #print(p)
                 if p not in prototypes_not_used:
                     for idx, score in topks[p]:
                         if idx == i:

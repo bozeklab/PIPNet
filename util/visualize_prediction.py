@@ -68,7 +68,7 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                 if not os.path.exists(save_path):
                     os.makedirs(save_path)
 
-                softmaxes_cpu = softmaxes.cpu()
+                #softmaxes_cpu = softmaxes.cpu()
                 #torch.save(softmaxes_cpu, os.path.join(save_path, 'sftmax.pth'))
 
                 sorted_pooled, sorted_pooled_indices = torch.sort(pooled.squeeze(0), descending=True)
@@ -103,7 +103,8 @@ def vis_pred(net, vis_test_dir, classes, device, args: argparse.Namespace):
                             heatmap = heatmap[...,::-1] # OpenCV's BGR to RGB
                             heatmap_img =  0.2 * np.float32(heatmap) + 0.6 * np.float32(img_tensor.squeeze().numpy().transpose(1,2,0))
                             plt.imsave(fname=os.path.join(save_path, 'heatmap_p%s.png'%str(prototype_idx.item())),arr=heatmap_img,vmin=0.0,vmax=1.0)
-           
+
+
 def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespace):
     # Make sure the model is in evaluation mode
     net.eval()
@@ -142,7 +143,6 @@ def vis_pred_experiments(net, imgs_dir, classes, device, args: argparse.Namespac
         with torch.no_grad():
             softmaxes, pooled, out = net(xs, inference=True) #softmaxes has shape (bs, num_prototypes, W, H), pooled has shape (bs, num_prototypes), out has shape (bs, num_classes)
             sorted_out, sorted_out_indices = torch.sort(out.squeeze(0), descending=True)
-
 
             for pred_class_idx in sorted_out_indices:
                 pred_class = classes[pred_class_idx]
