@@ -33,27 +33,18 @@ def visualize_dist(data):
 
 def build_image_grid(images):
     grid_size = int(np.ceil(np.sqrt(len(images))))
-    print('!!! grid_size: ', grid_size)
     fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
 
-    # Plot each image in the grid
-    for i, ax in enumerate(axes.flat):
-        if i < len(images):
-            ax.imshow(images[i], cmap='gray')  # Display image (replace cmap if not grayscale)
-            ax.axis('off')  # Turn off axes
-        else:
-            ax.axis('off')  # Turn off unused axes for empty spaces
+    for ax, img in zip(axes.flat, images + [None] * (grid_size**2 - len(images))):
+        if img is not None:
+            ax.imshow(img, cmap='gray')
+        ax.axis('off')
 
-    # Render the grid to a BytesIO buffer
-    img_buffer = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
-    plt.close()
-    img_buffer.seek(0)
+    fig.canvas.draw()
+    img = Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba()))  # Convert to PIL Image
+    plt.close(fig)
 
-    # Load the rendered image from the buffer
-    grid_image = Image.open(img_buffer)
-    return grid_image
+    return img  # Returns a PIL image
 
 
 @torch.no_grad()                    
