@@ -136,6 +136,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         #print('y ', y)
         #print('!!!! ', dist[0])
         #print('!!! ', len(dist[1][0]))
+        print('!!! ', len(dist[1]))
         dist_ps = []
         for d in dist[1]:
             dist_ps.append(visualize_dist(d[0]))
