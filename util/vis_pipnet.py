@@ -33,6 +33,7 @@ def visualize_dist(data):
 
 def build_image_grid(images):
     grid_size = int(np.ceil(np.sqrt(len(images))))
+    print('!!! grid_size: ', grid_size)
     fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
 
     # Plot each image in the grid
