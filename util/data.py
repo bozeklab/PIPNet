@@ -442,7 +442,7 @@ def shuffle_image_patches(img, patch_size=32):
     #img = F.resize(img, (224, 224))
 
     # Convert PIL image to tensor
-    #img_tensor = F.to_tensor(img)
+    img_tensor = img
 
     # Get image dimensions
     c, h, w = img_tensor.shape
