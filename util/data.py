@@ -474,8 +474,9 @@ def shuffle_image_patches(img, patch_size=32):
 
 
 def create_boolean_mask(mask_img):
-    mask_img = F.rgb_to_grayscale(mask_img)
     mask_img = shuffle_image_patches(mask_img)
+    mask_img = F.rgb_to_grayscale(mask_img)
+
     m_shape = mask_img.shape
     if len(m_shape) == 3:
         mask_img=mask_img.squeeze()
