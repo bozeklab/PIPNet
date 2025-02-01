@@ -439,11 +439,10 @@ def shuffle_image_patches(img, patch_size=32):
     """
     # Convert image to grayscale
     img = F.rgb_to_grayscale(img)
-    print(img)
     #img = F.resize(img, (224, 224))
 
     # Convert PIL image to tensor
-    img_tensor = img
+    img_tensor = F.to_tensor(img)
 
     # Get image dimensions
     c, h, w = img_tensor.shape
@@ -476,6 +475,7 @@ def shuffle_image_patches(img, patch_size=32):
 
 def create_boolean_mask(mask_img):
     mask_img = F.rgb_to_grayscale(mask_img)
+    print(type(mask_img))
     mask_img = shuffle_image_patches(mask_img)
 
     m_shape = mask_img.shape
