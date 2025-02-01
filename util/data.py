@@ -470,7 +470,7 @@ def shuffle_image_patches(img, patch_size=32):
             idx += 1
 
     # Convert back to PIL image
-    return F.to_pil_image(shuffled_img)
+    return shuffled_img
 
 
 def create_boolean_mask(mask_img):
