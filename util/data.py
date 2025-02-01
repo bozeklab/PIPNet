@@ -475,6 +475,7 @@ def shuffle_image_patches(img, patch_size=32):
 
 def create_boolean_mask(mask_img):
     mask_img = F.rgb_to_grayscale(mask_img)
+    print('!!!')
     print(type(mask_img))
     mask_img = shuffle_image_patches(mask_img)
 
