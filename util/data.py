@@ -439,6 +439,7 @@ def shuffle_image_patches(img, patch_size=32):
     """
     # Convert image to grayscale
     img = F.rgb_to_grayscale(img)
+    print(img)
     #img = F.resize(img, (224, 224))
 
     # Convert PIL image to tensor
