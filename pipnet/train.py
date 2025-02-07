@@ -66,8 +66,12 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
     if pretrain and epoch == 1:
         for i, (xs1, xs2, ys) in class_mpc_iter:
+            xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
+
+            proto_features, pooled, out = net(torch.cat([xs1, xs2]))
+
             for c in range(net.module._num_classes):
-                print('!!! ', xs1[ys == c, ...].shape)
+                print('!!! ', proto_features[ys == c, ...].shape)
                 #class_mpc[c, ...] += xs1[ys == c, ...]
 
     # Iterate through the data set to update leaves, prototypes and network
