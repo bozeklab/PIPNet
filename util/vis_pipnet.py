@@ -121,6 +121,8 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                             replace_choice = random.choice([0, 1])
                             if replace_choice > 0:
                                 topks[p][-1] = (i, pooled[p].item())
+                else:
+                    print('dupa')
     print('Creating distribution patterns...')
     selected_dists = random.sample(list(img_dist.items()), min(10, len(list(img_dist.items()))))
     for dist_id, dist in enumerate(selected_dists):
