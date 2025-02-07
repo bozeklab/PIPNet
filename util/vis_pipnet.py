@@ -32,13 +32,18 @@ def visualize_dist(data):
 
 
 def build_image_grid(images):
-    grid_size = int(np.ceil(np.sqrt(len(images))))
-    fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
+    rows, cols = 8, 4  # Fixed grid size (8 rows, 4 columns)
+    total_slots = rows * cols
 
-    print('!!! grid size:', grid_size)
-    print(f"Total subplots: {grid_size * grid_size}")  # Print the number of subplots
+    fig, axes = plt.subplots(rows, cols, figsize=(10, 20))
 
-    for ax, img in zip(axes.flat, images + [None] * (grid_size**2 - len(images))):
+    print(f"Grid size: {rows} rows x {cols} cols")
+    print(f"Total subplots: {total_slots}")
+
+    # Flatten axes for easier iteration
+    axes = np.array(axes).reshape(-1)
+
+    for ax, img in zip(axes, images + [None] * (total_slots - len(images))):
         if img is not None:
             ax.imshow(img, cmap='gray')
         ax.axis('off')
@@ -46,6 +51,8 @@ def build_image_grid(images):
     fig.canvas.draw()
     img = Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba()))  # Convert to PIL Image
     plt.close(fig)
+
+    return img  # Returns a PIL image
 
 
 @torch.no_grad()                    
