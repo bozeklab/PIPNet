@@ -8,7 +8,7 @@ import math
 from pipnet.cka_loss import CKA_loss
 
 
-def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch'):
+def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch'):
 
     # Make sure the model is in train mode
     net.train()

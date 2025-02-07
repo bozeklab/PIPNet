@@ -187,8 +187,10 @@ def run_pipnet(args=None):
     else:
         # Create a csv log for storing the test accuracy (top 1 and top 5), mean train accuracy and mean loss for each epoch
         log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_top5_acc', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
-    
-    
+
+    class_mpc = torch.zeros(net.module._num_classes, num_prototypes,
+                            proto_features.shape[-1] * proto_features.shape[-2]).cuda()
+
     lrs_pretrain_net = []
     # PRETRAINING PROTOTYPES PHASE
     for epoch in range(1, args.epochs_pretrain+1):
@@ -204,9 +206,9 @@ def run_pipnet(args=None):
             param.requires_grad = False #can be set to True when you want to train whole backbone (e.g. if dataset is very different from ImageNet)
         
         print("\nPretrain Epoch", epoch, "with batch size", trainloader_pretraining.batch_size, flush=True)
-        
+
         # Pretrain prototypes
-        train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, optimizer_classifier, scheduler_net, None, criterion, epoch, args.epochs_pretrain, device, pretrain=True, finetune=False)
+        train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, optimizer_classifier, scheduler_net, None, criterion, epoch, args.epochs_pretrain, class_mpc, device, pretrain=True, finetune=False)
         lrs_pretrain_net+=train_info['lrs_net']
         plt.clf()
         plt.plot(lrs_pretrain_net)
@@ -288,7 +290,7 @@ def run_pipnet(args=None):
                     print("Classifier bias: ", net.module._classification.bias, flush=True)
                 torch.set_printoptions(profile="default")
 
-        train_info = train_pipnet(net, trainloader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, args.epochs, device, pretrain=False, finetune=finetune)
+        train_info = train_pipnet(net, trainloader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, args.epochs, class_mpc, device, pretrain=False, finetune=finetune)
         lrs_net+=train_info['lrs_net']
         lrs_classifier+=train_info['lrs_class']
         # Evaluate model
