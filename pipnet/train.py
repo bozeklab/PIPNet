@@ -79,7 +79,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     class_mpc = torch.mean(class_mpc, dim=-1)
     dist_ps = []
     for c in range(net.module._num_classes):
-        dist_ps.append(visualize_dist(class_mpc[c, :].detach().cpu()))
+        for p in range(32):
+            dist_ps.append(visualize_dist(class_mpc[c, p, :].detach().cpu()))
         grid_image = build_image_grid(dist_ps)
         save_path = os.path.join('/data/pwojcik/PIPNet/', f"class_grid_{c}.png")
         grid_image.save(save_path)
