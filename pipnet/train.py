@@ -72,7 +72,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
             for c in range(net.module._num_classes):
                 print('!!! ', proto_features[ys == c, ...].shape, class_mpc[c, ...].shape)
-                class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2)
+                class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
 
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, ys) in train_iter:       
