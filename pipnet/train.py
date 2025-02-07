@@ -1,3 +1,5 @@
+import os
+
 from tqdm import tqdm
 import torch
 import torch.nn.functional as F
@@ -6,6 +8,7 @@ import torch.utils.data
 import math
 
 from pipnet.cka_loss import CKA_loss
+from util.vis_pipnet import visualize_dist, build_image_grid
 
 
 def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch'):
@@ -73,7 +76,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             for c in range(net.module._num_classes):
                 #print('!!! ', proto_features[ys == c, ...].shape, class_mpc[c, ...].shape)
                 class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
-    print('!!!! ', class_mpc.shape)
+    class_mpc = torch.mean(class_mpc, dim=-1)
+    dist_ps = []
+    for c in range(net.module._num_classes):
+        dist_ps.append(visualize_dist(class_mpc[c, :]))
+        grid_image = build_image_grid(dist_ps)
+        save_path = os.path.join('/data/pwojcik/PIPNet/', f"class_grid_{c}.png")
+        grid_image.save(save_path)
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, ys) in train_iter:       
         
