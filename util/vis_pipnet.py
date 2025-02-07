@@ -35,7 +35,8 @@ def build_image_grid(images):
     grid_size = int(np.ceil(np.sqrt(len(images))))
     fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
 
-    print('!!! grid size', grid_size)
+    print('!!! grid size:', grid_size)
+    print(f"Total subplots: {grid_size * grid_size}")  # Print the number of subplots
 
     for ax, img in zip(axes.flat, images + [None] * (grid_size**2 - len(images))):
         if img is not None:
@@ -45,8 +46,6 @@ def build_image_grid(images):
     fig.canvas.draw()
     img = Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba()))  # Convert to PIL Image
     plt.close(fig)
-
-    return img  # Returns a PIL image
 
 
 @torch.no_grad()                    
@@ -102,7 +101,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             
             for p in range(pooled.shape[0]):
                 c_weight = torch.max(classification_weights[:,p])
-                print('p c_weight ', p, c_weight)
+                #print('p c_weight ', p, c_weight)
                 if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
                     #p_x = visualize_dist(pfs[p].view(-1).cpu(), ys)
                     if i not in img_dist.keys():
