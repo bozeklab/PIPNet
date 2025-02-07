@@ -78,6 +78,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
     class_mpc = torch.mean(class_mpc, dim=-1)
     dist_ps = []
+    print('!!!! ', class_mpc.shape)
     for c in range(net.module._num_classes):
         for p in range(32):
             dist_ps.append(visualize_dist(class_mpc[c, p, :].detach().cpu()))
