@@ -105,6 +105,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
                     #p_x = visualize_dist(pfs[p].view(-1).cpu(), ys)
                     if i not in img_dist.keys():
                         img_dist[i] = []
+                        img_dist[i].append((pfs[p].view(-1).cpu(), ys.cpu().item()))
                     else:
                         img_dist[i].append((pfs[p].view(-1).cpu(), ys.cpu().item()))
                     if p not in topks.keys():
