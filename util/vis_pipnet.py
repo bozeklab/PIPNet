@@ -35,6 +35,8 @@ def build_image_grid(images):
     grid_size = int(np.ceil(np.sqrt(len(images))))
     fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
 
+    print('!!! grid size', grid_size)
+
     for ax, img in zip(axes.flat, images + [None] * (grid_size**2 - len(images))):
         if img is not None:
             ax.imshow(img, cmap='gray')
@@ -131,7 +133,7 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         #print('y ', y)
         #print('!!!! ', dist[0])
         #print('!!! ', len(dist[1][0]))
-        print('!!! ', len(dist[1]))
+        #print('!!! ', len(dist[1]))
         dist_ps = []
         for d in dist[1]:
             dist_ps.append(visualize_dist(d[0]))
