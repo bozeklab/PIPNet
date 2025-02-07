@@ -74,6 +74,10 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         # Compute the gradient
         loss.backward()
 
+        if pretrain and epoch == 0:
+            for c in net.module._num_classes:
+                print(ys == c)
+
         if not pretrain:
             optimizer_classifier.step()   
             scheduler_classifier.step(epoch - 1 + (i/iters))
