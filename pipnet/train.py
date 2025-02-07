@@ -33,6 +33,12 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                     desc=progress_prefix+'%s'%epoch,
                     mininterval=2.,
                     ncols=0)
+
+    class_mpc_iter = tqdm(enumerate(train_loader),
+                    total=len(train_loader),
+                    desc=progress_prefix+'%s'%epoch,
+                    mininterval=2.,
+                    ncols=0)
     
     count_param=0
     for name, param in net.named_parameters():
@@ -57,6 +63,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     
     lrs_net = []
     lrs_class = []
+
+    if pretrain and epoch == 1:
+        for i, (xs1, xs2, ys) in class_mpc_iter:
+            for c in range(net.module._num_classes):
+                print(ys, c)
+                print(ys == c)
+
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, ys) in train_iter:       
         
@@ -75,11 +88,6 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         loss.backward()
 
         print(pretrain, epoch)
-
-        if pretrain and epoch == 1:
-            for c in range(net.module._num_classes):
-                print(ys, c)
-                print(ys == c)
 
         if not pretrain:
             optimizer_classifier.step()   
