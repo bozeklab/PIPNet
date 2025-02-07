@@ -78,6 +78,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
         if pretrain and epoch == 1:
             for c in range(net.module._num_classes):
+                print(ys, c)
                 print(ys == c)
 
         if not pretrain:
