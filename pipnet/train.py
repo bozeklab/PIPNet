@@ -67,8 +67,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     if pretrain and epoch == 1:
         for i, (xs1, xs2, ys) in class_mpc_iter:
             for c in range(net.module._num_classes):
-                print(ys, c)
-                print(ys == c)
+                print('!!! ', xs1[ys == c, ...].shape)
+                #class_mpc[c, ...] += xs1[ys == c, ...]
 
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, ys) in train_iter:       
@@ -86,8 +86,6 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         
         # Compute the gradient
         loss.backward()
-
-        print(pretrain, epoch)
 
         if not pretrain:
             optimizer_classifier.step()   
