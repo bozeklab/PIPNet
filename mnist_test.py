@@ -62,7 +62,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = models.convnext_tiny(weights=models.ConvNeXt_Tiny_Weights.DEFAULT)
 
 # Modify classification layer to predict 49 digits (one for each tile)
-model.classifier[2] = nn.Linear(model.classifier[2].in_features, 49)
+model.classifier[2] = nn.Linear(model.classifier[2].in_features, 49, 10)
 
 model = model.to(device)
 
