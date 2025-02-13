@@ -53,7 +53,7 @@ def visualize_two_dists(data1, data2):
     return image
 
 def build_image_grid(images):
-    rows, cols = 8, 4  # Fixed grid size (8 rows, 4 columns)
+    rows, cols = 1, 4  # Fixed grid size (8 rows, 4 columns)
     total_slots = rows * cols
 
     fig, axes = plt.subplots(rows, cols, figsize=(20, 40))
