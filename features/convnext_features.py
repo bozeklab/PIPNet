@@ -32,6 +32,7 @@ def convnext_tiny_26_features(pretrained=False, **kwargs):
 
 
 def convnext_tiny_13_features(pretrained=False, **kwargs):
+    print('!!!! pretrained', pretrained)
     model = models.convnext_tiny(pretrained=pretrained, weights=models.ConvNeXt_Tiny_Weights.DEFAULT)
     with torch.no_grad():
         model.avgpool = nn.Identity()
