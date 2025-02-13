@@ -86,9 +86,6 @@ def train(model, train_loader, optimizer, criterion, device, epochs=5):
             optimizer.zero_grad()
             outputs = model(images)  # Shape: [batch_size, 49, num_classes]
 
-            print('!!!')
-            print(outputs.shape, labels.shape)
-
             loss = criterion(outputs.view(-1, 10), labels.view(-1))  # Reshape for loss
             loss.backward()
             optimizer.step()
@@ -117,6 +114,8 @@ def evaluate(model, test_loader, criterion, device):
 
             outputs = model(images)
             loss = criterion(outputs.view(-1, 10), labels.view(-1))
+            print('!!!')
+            print(outputs.shape, labels.shape)
             total_loss += loss.item()
 
             _, preds = outputs.max(dim=2)
