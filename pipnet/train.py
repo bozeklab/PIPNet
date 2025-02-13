@@ -77,6 +77,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
             for c in range(net.module._num_classes):
                 print('!!! c == ', c,  proto_features[ys == c, ...].shape, class_mpc[c, ...].shape)
+                print(F.mse_loss(proto_features[ys == 0, ...].flatten(2).sum(0), proto_features[ys == 1, ...].flatten(2).sum(0)))
                 class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
                 class_counts[c] += (ys == c).sum()
         class_mpc /= class_counts.view(-1, 1, 1)
