@@ -75,7 +75,7 @@ def run_pipnet(args=None):
     feature_net, add_on_layers, pool_layer, classification_layer, num_prototypes = get_network(len(classes), args)
     model_path = "convnext_mnist.pth"
     print("Loading MNIST ConvNeXT weights into feature_net...")
-    missing_keys, unexpected_keys = feature_net.load_state_dict(torch.load(model_path, map_location=device), stict=False)
+    missing_keys, unexpected_keys = feature_net.load_state_dict(torch.load(model_path, map_location=device), strict=False)
 
     writer = SummaryWriter(log_dir=args.log_dir)
 
