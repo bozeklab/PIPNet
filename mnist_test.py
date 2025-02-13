@@ -85,6 +85,7 @@ def train(model, train_loader, optimizer, criterion, device, epochs=5):
 
             optimizer.zero_grad()
             outputs = model(images)  # Shape: [batch_size, 49, num_classes]
+            outputs = outputs.view(-1, 49, 10)
 
             loss = criterion(outputs.view(-1, 10), labels.view(-1))  # Reshape for loss
             loss.backward()
