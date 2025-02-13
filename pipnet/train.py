@@ -69,7 +69,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
     class_counts = torch.zeros(net.module._num_classes, device=device)
 
-    if pretrain and epoch == 3:
+    if pretrain and epoch == 2:
         for _, (xs1, xs2, ys) in class_mpc_iter:
             xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
 
