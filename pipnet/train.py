@@ -69,7 +69,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
     class_counts = torch.zeros(net.module._num_classes, device=device)
 
-    if pretrain and epoch == 3:
+    if pretrain and epoch == 1:
         for _, (xs1, xs2, ys) in class_mpc_iter:
             xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
 
@@ -78,7 +78,9 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             for c in range(net.module._num_classes):
                 print('!!! c == ', c,  proto_features[ys == c, ...].shape, class_mpc[c, ...].shape, ys.shape)
                 #print(F.mse_loss(proto_features[ys == 0, ...].flatten(2).sum(0), proto_features[ys == 1, ...].flatten(2).sum(0)))
-                class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
+                pf = proto_features[ys == c, ...].flatten(2).sum(0)
+                pf_s, _ = torch.sort(pf, dim=1)
+                class_mpc[c, ...] += pf_s
                 mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
                 print(f"!! MSE Loss between class {0} and class {1}: {mse_loss.item():.6f}")
                 class_counts[c] += (ys == c).sum()

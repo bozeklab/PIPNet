@@ -42,7 +42,7 @@ def visualize_two_dists(data1, data2):
     plt.legend()
     plt.xlabel('Position')
     plt.ylabel('Strength')
-    plt.title('Comparison of Two Distributions')
+    plt.title('Cls 0 cls 1')
 
     # Save plot as an image
     img_buffer = io.BytesIO()
