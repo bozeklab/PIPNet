@@ -44,7 +44,7 @@ class MNISTPatchDataset(Dataset):
         # Create 7x7 grid of 32x32 MNIST tiles
         image = torch.cat(
             [torch.cat(tiles[i:i + self.grid_size], dim=2) for i in range(0, self.num_tiles, self.grid_size)], dim=1)
-        label = torch.tensor(labels, dtype=torch.long)
+        label = torch.tensor(labels, dtype=torch.long)  # Shape: [49]
 
         return image.repeat(3, 1, 1), label  # Convert grayscale to 3-channel RGB
 
@@ -64,7 +64,19 @@ model = models.convnext_tiny(weights=models.ConvNeXt_Tiny_Weights.DEFAULT)
 # Modify classification layer to predict 49 digits (one for each tile)
 model.classifier[2] = nn.Linear(model.classifier[2].in_features, 49 * 10)
 
-model = model.to(device)
+# Wrap the model for correct output shape
+class TileClassifier(nn.Module):
+    def __init__(self, model):
+        super(TileClassifier, self).__init__()
+        self.model = model
+        self.softmax = nn.Softmax(dim=-1)  # Softmax over 10 classes per tile
+
+    def forward(self, x):
+        x = self.model(x)  # Output shape: [batch, 490]
+        x = x.view(x.shape[0], 49, 10)  # Reshape to [batch, 49, 10]
+        return x  # Return raw logits (CrossEntropyLoss will apply softmax)
+
+model = TileClassifier(model).to(device)
 
 # Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -81,11 +93,10 @@ def train(model, train_loader, optimizer, criterion, device, epochs=5):
 
         loop = tqdm(train_loader, desc=f"Epoch {epoch + 1}/{epochs}")
         for images, labels in loop:
-            images, labels = images.to(device), labels.to(device)
+            images, labels = images.to(device), labels.to(device)  # labels: [batch, 49]
 
             optimizer.zero_grad()
-            outputs = model(images)  # Shape: [batch_size, 49, num_classes]
-            outputs = outputs.view(-1, 49, 10)
+            outputs = model(images)  # Shape: [batch_size, 49, 10]
 
             loss = criterion(outputs.view(-1, 10), labels.view(-1))  # Reshape for loss
             loss.backward()
@@ -93,8 +104,8 @@ def train(model, train_loader, optimizer, criterion, device, epochs=5):
 
             epoch_loss += loss.item()
 
-            #print('!!! ', outputs.shape)
-            _, preds = outputs.max(dim=2)  # Get predicted labels
+            # Compute accuracy
+            preds = outputs.argmax(dim=2)  # Get predicted labels (batch, 49)
             correct += (preds == labels).sum().item()
             total += labels.numel()
 
@@ -114,14 +125,11 @@ def evaluate(model, test_loader, criterion, device):
         for images, labels in tqdm(test_loader, desc="Evaluating"):
             images, labels = images.to(device), labels.to(device)
 
-            outputs = model(images)
-            outputs = outputs.view(-1, 49, 10)
-            #print('!!!')
-            #print(outputs.view(-1, 10).shape, labels.view(-1).shape)
-            loss = criterion(outputs.view(-1, 10), labels.view(-1))
+            outputs = model(images)  # Shape: [batch, 49, 10]
+            loss = criterion(outputs.view(-1, 10), labels.view(-1))  # Compute loss
             total_loss += loss.item()
 
-            _, preds = outputs.max(dim=2)
+            preds = outputs.argmax(dim=2)  # Predicted class per tile
             correct += (preds == labels).sum().item()
             total += labels.numel()
 
