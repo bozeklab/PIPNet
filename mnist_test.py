@@ -113,9 +113,9 @@ def evaluate(model, test_loader, criterion, device):
             images, labels = images.to(device), labels.to(device)
 
             outputs = model(images)
-            loss = criterion(outputs.view(-1, 10), labels.view(-1))
             print('!!!')
             print(outputs.shape, labels.shape)
+            loss = criterion(outputs.view(-1, 10), labels.view(-1))
             total_loss += loss.item()
 
             _, preds = outputs.max(dim=2)
