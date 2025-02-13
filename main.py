@@ -88,8 +88,7 @@ def run_pipnet(args=None):
                     feature_net = feature_net,
                     args = args,
                     add_on_layers = add_on_layers,
-                    pool_layer = pool_layer,
-                    classification_layer = classification_layer
+                    pool_layer = pool_layer
                     )
     net = net.to(device=device)
     net = nn.DataParallel(net, device_ids = device_ids)    
