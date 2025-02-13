@@ -234,10 +234,10 @@ def run_pipnet(args=None):
     optimizer_net, params_to_freeze, params_to_train, params_backbone = get_optimizer_nn(net, args)
     scheduler_net = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_net, T_max=len(trainloader)*args.epochs, eta_min=args.lr_net/100.)
     # scheduler for the classification layer is with restarts, such that the model can re-active zeroed-out prototypes. Hence an intuitive choice. 
-    if args.epochs<=30:
-        scheduler_classifier = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer_classifier, T_0=5, eta_min=0.001, T_mult=1, verbose=False)
-    else:
-        scheduler_classifier = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer_classifier, T_0=10, eta_min=0.001, T_mult=1, verbose=False)
+    #if args.epochs<=30:
+    #    scheduler_classifier = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer_classifier, T_0=5, eta_min=0.001, T_mult=1, verbose=False)
+    #else:
+    #    scheduler_classifier = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer_classifier, T_0=10, eta_min=0.001, T_mult=1, verbose=False)
     for param in net.module.parameters():
         param.requires_grad = False
     for param in net.module._classification.parameters():
@@ -248,7 +248,7 @@ def run_pipnet(args=None):
     lrs_classifier = []
    
     for epoch in range(1, args.epochs + 1):                      
-        epochs_to_finetune = 3 #during finetuning, only train classification layer and freeze rest. usually done for a few epochs (at least 1, more depends on size of dataset)
+        epochs_to_finetune = 20 #during finetuning, only train classification layer and freeze rest. usually done for a few epochs (at least 1, more depends on size of dataset)
         if epoch <= epochs_to_finetune and (args.epochs_pretrain > 0 or args.state_dict_dir_net != ''):
             for param in net.module._add_on.parameters():
                 param.requires_grad = False
