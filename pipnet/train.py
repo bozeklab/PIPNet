@@ -90,7 +90,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 print(f"MSE Loss between class {c1} and class {c2}: {mse_loss.item():.6f}")
 
         dist_ps = []
-        for p in range(32):
+        for p in range(4):
             dist_ps.append(visualize_two_dists(class_mpc[0, p, :].detach().cpu(), class_mpc[1, p, :].detach().cpu()))
         grid_image = build_image_grid(dist_ps)
         save_path = os.path.join('/data/pwojcik/PIPNet/', f"class_grid.png")
