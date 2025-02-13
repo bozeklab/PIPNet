@@ -93,6 +93,7 @@ def train(model, train_loader, optimizer, criterion, device, epochs=5):
 
             epoch_loss += loss.item()
 
+            print('!!! ', outputs.shape)
             _, preds = outputs.max(dim=2)  # Get predicted labels
             correct += (preds == labels).sum().item()
             total += labels.numel()
