@@ -46,6 +46,7 @@ class CCD_loss(nn.Module):
 
         #img_MCP_dist = torch.cat(max_responses, dim=1)
         #img_MCP_dist = img_MCP_dist / torch.sum(img_MCP_dist, dim=-1, keepdim=True)
+        print('!!! ', proto_features.shape, class_MCP_dist.shape)
         MCP_dist = self.JS_div(proto_features, class_MCP_dist)
         print('!!! ', proto_features.shape, class_MCP_dist.shape)
         same_class = torch.mean(torch.gather(MCP_dist, dim=1, index=label[:, None]))
