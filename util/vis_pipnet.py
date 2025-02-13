@@ -36,8 +36,8 @@ def visualize_two_dists(data1, data2):
     width = 0.4  # Bar width for better visibility
 
     plt.figure(figsize=(10, 6))
-    plt.bar(x - width/2, data1.numpy(), width=width, color='blue', alpha=0.7, label='Distribution 1')
-    plt.bar(x + width/2, data2.numpy(), width=width, color='red', alpha=0.7, label='Distribution 2')
+    plt.bar(x - width/2, data1.numpy(), width=width, color='blue', alpha=0.7)
+    plt.bar(x + width/2, data2.numpy(), width=width, color='red', alpha=0.7)
 
     plt.legend()
     plt.xlabel('Position')
