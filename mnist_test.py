@@ -44,7 +44,7 @@ print("Training started...")
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
-    for images, labels in train_loader:
+    for images, labels in tqdm(train_loader, desc="train"):
         images, labels = images.to(device), labels.to(device)
 
         # Forward pass
