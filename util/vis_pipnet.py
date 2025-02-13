@@ -56,7 +56,7 @@ def build_image_grid(images):
     rows, cols = 8, 4  # Fixed grid size (8 rows, 4 columns)
     total_slots = rows * cols
 
-    fig, axes = plt.subplots(rows, cols, figsize=(10, 20))
+    fig, axes = plt.subplots(rows, cols, figsize=(20, 40))
 
     print(f"Grid size: {rows} rows x {cols} cols")
     print(f"Total subplots: {total_slots}")
