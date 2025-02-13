@@ -240,8 +240,8 @@ def run_pipnet(args=None):
     #    scheduler_classifier = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer_classifier, T_0=10, eta_min=0.001, T_mult=1, verbose=False)
     for param in net.module.parameters():
         param.requires_grad = False
-    for param in net.module._classification.parameters():
-        param.requires_grad = True
+    #for param in net.module._classification.parameters():
+    #    param.requires_grad = True
     
     frozen = True
     lrs_net = []
