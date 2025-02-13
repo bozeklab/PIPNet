@@ -70,13 +70,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     class_counts = torch.zeros(net.module._num_classes, device=device)
 
     if pretrain and epoch == 1:
-        for i, (xs1, xs2, ys) in class_mpc_iter:
+        for _, (xs1, xs2, ys) in class_mpc_iter:
             xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
 
             proto_features, pooled, out = net(xs1)
 
             for c in range(net.module._num_classes):
-                print('!!! c == ', c,  proto_features[ys == c, ...].shape, class_mpc[c, ...].shape)
+                print('!!! c == ', c,  proto_features[ys == c, ...].shape, class_mpc[c, ...].shape, ys.shape)
                 #print(F.mse_loss(proto_features[ys == 0, ...].flatten(2).sum(0), proto_features[ys == 1, ...].flatten(2).sum(0)))
                 class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
                 mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
@@ -90,7 +90,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 print(f"MSE Loss between class {c1} and class {c2}: {mse_loss.item():.6f}")
 
         dist_ps = []
-        for p in range(4):
+        for p in range(32):
             dist_ps.append(visualize_two_dists(class_mpc[0, p, :].detach().cpu(), class_mpc[1, p, :].detach().cpu()))
         grid_image = build_image_grid(dist_ps)
         save_path = os.path.join('/data/pwojcik/PIPNet/', f"class_grid.png")
