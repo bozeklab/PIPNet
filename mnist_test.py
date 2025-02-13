@@ -48,6 +48,7 @@ for epoch in range(num_epochs):
 
         # Forward pass
         outputs = model(images)
+        print('!! outputs: ', outputs.shape)
         loss = criterion(outputs, labels)
 
         # Backward pass
