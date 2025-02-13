@@ -71,7 +71,11 @@ def run_pipnet(args=None):
             print("Classes: ", str(classes), flush=True)
     
     # Create a convolutional network based on arguments and add 1x1 conv layer
+
     feature_net, add_on_layers, pool_layer, classification_layer, num_prototypes = get_network(len(classes), args)
+    model_path = "convnext_mnist.pth"
+    print("Loading MNIST ConvNeXT weights into feature_net...")
+    feature_net.load_state_dict(torch.load(model_path, map_location=device))
 
     writer = SummaryWriter(log_dir=args.log_dir)
 
