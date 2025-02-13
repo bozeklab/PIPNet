@@ -80,7 +80,7 @@ model = TileClassifier(model).to(device)
 
 # Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
+optimizer = optim.Adam(model.parameters(), lr=1e-2)
 
 
 # Training function
