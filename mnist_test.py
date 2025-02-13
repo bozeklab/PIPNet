@@ -21,6 +21,8 @@ transform = transforms.Compose([
 train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, download=True)
 test_dataset = datasets.MNIST(root='./data', train=False, transform=transform, download=True)
 
+print('MNIST/train len: ', print(train_dataset))
+
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
@@ -48,7 +50,6 @@ for epoch in range(num_epochs):
 
         # Forward pass
         outputs = model(images)
-        print('!! outputs: ', outputs.shape)
         loss = criterion(outputs, labels)
 
         # Backward pass
