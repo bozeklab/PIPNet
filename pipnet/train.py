@@ -82,7 +82,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
                 print(f"!! MSE Loss between class {0} and class {1}: {mse_loss.item():.6f}")
                 class_counts[c] += (ys == c).sum()
-        #class_mpc /= class_counts.view(-1, 1, 1)
+        class_mpc /= class_counts.view(-1, 1, 1)
+        class_mpc *= 100.0
 
         for c1 in range(net.module._num_classes):
             for c2 in range(c1 + 1, net.module._num_classes):  # Avoid redundant calculations
