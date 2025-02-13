@@ -91,7 +91,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
         dist_ps = []
         for p in range(32):
-            dist_ps.append(visualize_dist(visualize_two_dists(class_mpc[0, p, :].detach().cpu(), class_mpc[1, p, :].detach().cpu())))
+            dist_ps.append(visualize_two_dists(class_mpc[0, p, :].detach().cpu(), class_mpc[1, p, :].detach().cpu()))
         grid_image = build_image_grid(dist_ps)
         save_path = os.path.join('/data/pwojcik/PIPNet/', f"class_grid.png")
         grid_image.save(save_path)
