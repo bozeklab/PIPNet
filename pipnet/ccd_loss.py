@@ -43,6 +43,8 @@ class CCD_loss(nn.Module):
         argmax_indices = torch.argmax(feat, dim=1, keepdim=True)
         mask = torch.zeros_like(feat).scatter_(1, argmax_indices, 1)
         proto_features = feat * mask
+        pf_s, _ = torch.sort(feat, dim=1)
+        proto_features = pf_s.squeeze(dim=2).flatten(2)
 
         #img_MCP_dist = torch.cat(max_responses, dim=1)
         #img_MCP_dist = img_MCP_dist / torch.sum(img_MCP_dist, dim=-1, keepdim=True)
