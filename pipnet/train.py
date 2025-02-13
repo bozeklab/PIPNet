@@ -84,18 +84,18 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 class_counts[c] += (ys == c).sum()
         class_mpc /= class_counts.view(-1, 1, 1)
 
-    for c1 in range(net.module._num_classes):
-        for c2 in range(c1 + 1, net.module._num_classes):  # Avoid redundant calculations
-            mse_loss = F.mse_loss(class_mpc[c1], class_mpc[c2])
-            print(f"MSE Loss between class {c1} and class {c2}: {mse_loss.item():.6f}")
+        for c1 in range(net.module._num_classes):
+            for c2 in range(c1 + 1, net.module._num_classes):  # Avoid redundant calculations
+                mse_loss = F.mse_loss(class_mpc[c1], class_mpc[c2])
+                print(f"MSE Loss between class {c1} and class {c2}: {mse_loss.item():.6f}")
 
-    for c in range(net.module._num_classes):
-        dist_ps = []
-        for p in range(32):
-            dist_ps.append(visualize_dist(class_mpc[c, p, :].detach().cpu()))
-        grid_image = build_image_grid(dist_ps)
-        save_path = os.path.join('/data/pwojcik/PIPNet/', f"class_grid_{c}.png")
-        grid_image.save(save_path)
+        for c in range(net.module._num_classes):
+            dist_ps = []
+            for p in range(32):
+                dist_ps.append(visualize_dist(class_mpc[c, p, :].detach().cpu()))
+            grid_image = build_image_grid(dist_ps)
+            save_path = os.path.join('/data/pwojcik/PIPNet/', f"class_grid_{c}.png")
+            grid_image.save(save_path)
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, ys) in train_iter:       
         
