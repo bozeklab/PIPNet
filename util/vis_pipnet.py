@@ -31,6 +31,27 @@ def visualize_dist(data):
     return image
 
 
+def visualize_two_dists(data1, data2):
+    x = np.arange(len(data1))  # X-axis positions
+    width = 0.4  # Bar width for better visibility
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(x - width/2, data1.numpy(), width=width, color='blue', alpha=0.7, label='Distribution 1')
+    plt.bar(x + width/2, data2.numpy(), width=width, color='red', alpha=0.7, label='Distribution 2')
+
+    plt.legend()
+    plt.xlabel('Position')
+    plt.ylabel('Strength')
+    plt.title('Comparison of Two Distributions')
+
+    # Save plot as an image
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
+    plt.close()
+    img_buffer.seek(0)
+    image = Image.open(img_buffer)
+    return image
+
 def build_image_grid(images):
     rows, cols = 8, 4  # Fixed grid size (8 rows, 4 columns)
     total_slots = rows * cols
