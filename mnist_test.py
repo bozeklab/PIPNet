@@ -93,7 +93,7 @@ def train(model, train_loader, optimizer, criterion, device, epochs=5):
 
             epoch_loss += loss.item()
 
-            print('!!! ', outputs.shape)
+            #print('!!! ', outputs.shape)
             _, preds = outputs.max(dim=2)  # Get predicted labels
             correct += (preds == labels).sum().item()
             total += labels.numel()
@@ -115,8 +115,9 @@ def evaluate(model, test_loader, criterion, device):
             images, labels = images.to(device), labels.to(device)
 
             outputs = model(images)
-            print('!!!')
-            print(outputs.view(-1, 10).shape, labels.view(-1).shape)
+            outputs = outputs.view(-1, 49, 10)
+            #print('!!!')
+            #print(outputs.view(-1, 10).shape, labels.view(-1).shape)
             loss = criterion(outputs.view(-1, 10), labels.view(-1))
             total_loss += loss.item()
 
