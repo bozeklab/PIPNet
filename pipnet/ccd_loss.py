@@ -25,7 +25,7 @@ class CCD_loss(nn.Module):
         return (self.KL_div(img_node, M) + self.KL_div(cd_node, M)) / 2
 
     def forward(self, feat,  label, class_MCP_dist):
-        max_responses = []
+        #max_responses = []
         concept_num = feat.shape[1]
         cha_per_con = 1
         B, C, H, W = feat.shape

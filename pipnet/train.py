@@ -113,7 +113,7 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
         # Perform a forward pass through the network
         proto_features, pooled, out = net(torch.cat([xs1, xs2]))
         #print('!!! ', proto_features.shape)
-        loss, acc = calculate_loss(proto_features, pooled, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-8)
+        loss, acc = calculate_loss(proto_features, pooled, out, ys, align_pf_weight, t_weight, unif_weight,  cl_weight, class_mpc, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-8)
         
         # Compute the gradient
         loss.backward()
@@ -148,7 +148,7 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
     return train_info
 
 
-def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-10, writer=None):
+def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, class_mpc, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-10, writer=None):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
     pf1, pf2 = proto_features.chunk(2)
@@ -170,9 +170,9 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         loss += ck_loss
         #print(ck_loss, tanh_loss, t_weight * tanh_loss)
     if not pretrain:
-        softmax_inputs = torch.log1p(out**net_normalization_multiplier)
+        #softmax_inputs = torch.log1p(out**net_normalization_multiplier)
 
-        #class_loss = criterion(F.log_softmax((softmax_inputs),dim=1),ys)
+        class_loss = ccd(pf1, ys1, class_mpc)
 
         if finetune:
             loss= cl_weight * class_loss
