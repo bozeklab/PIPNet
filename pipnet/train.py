@@ -67,6 +67,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     lrs_net = []
     lrs_class = []
 
+    class_counts = torch.zeros(net.module._num_classes, device=device)
+
     if pretrain and epoch == 1:
         for i, (xs1, xs2, ys) in class_mpc_iter:
             xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
@@ -76,6 +78,9 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             for c in range(net.module._num_classes):
                 #print('!!! ', proto_features[ys == c, ...].shape, class_mpc[c, ...].shape)
                 class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
+                class_counts[c] += (ys == c).sum()
+    class_mpc = class_mpc / class_counts.view(-1, 1, 1)
+
     #class_mpc = torch.mean(class_mpc, dim=0)
 
     print('!!!! ', class_mpc.shape)
