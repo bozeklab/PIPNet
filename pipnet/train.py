@@ -79,8 +79,9 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 #print('!!! ', proto_features[ys == c, ...].shape, class_mpc[c, ...].shape)
                 class_mpc[c, ...] += proto_features[ys == c, ...].flatten(2).sum(0)
                 class_counts[c] += (ys == c).sum()
-    class_mpc = class_mpc / class_counts.view(-1, 1, 1)
+        class_mpc /= class_counts.view(-1, 1, 1)
 
+    print('!!! class_mpc ', class_mpc.shape)
     #class_mpc = torch.mean(class_mpc, dim=0)
 
     print('!!!! ', class_mpc.shape)
