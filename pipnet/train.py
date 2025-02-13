@@ -69,7 +69,7 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, scheduler_clas
 
     class_counts = torch.zeros(net.module._num_classes, device=device)
 
-    if pretrain and epoch == 1:
+    if epoch == 1:
         for _, (xs1, xs2, ys) in class_mpc_iter:
             xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
 
@@ -79,13 +79,13 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, scheduler_clas
             proto_features = proto_features * mask
 
             for c in range(net.module._num_classes):
-                print('!!! c == ', c,  proto_features[ys == c, ...].shape, class_mpc[c, ...].shape, ys.shape)
+                #print('!!! c == ', c,  proto_features[ys == c, ...].shape, class_mpc[c, ...].shape, ys.shape)
                 #print(F.mse_loss(proto_features[ys == 0, ...].flatten(2).sum(0), proto_features[ys == 1, ...].flatten(2).sum(0)))
                 pf = proto_features[ys == c, ...].flatten(2).sum(0)
                 pf_s, _ = torch.sort(pf, dim=1)
                 class_mpc[c, ...] += pf_s
                 mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
-                print(f"!! MSE Loss between class {0} and class {1}: {mse_loss.item():.6f}")
+#
                 class_counts[c] += (ys == c).sum()
         class_mpc /= class_counts.view(-1, 1, 1)
         class_mpc *= 100.0
@@ -157,7 +157,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     embv1 = pf1.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     
     a_loss_pf = (align_loss(embv1, embv2.detach())+ align_loss(embv2, embv1.detach()))/2.
-    tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
+    #tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
     cka = CKA_loss(concept_cha=1)
     ck_loss = cka.forward(feature_map=pf1) + cka.forward(feature_map=pf2)

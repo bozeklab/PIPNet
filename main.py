@@ -211,23 +211,23 @@ def run_pipnet(args=None):
         for param in params_backbone:
             param.requires_grad = False #can be set to True when you want to train whole backbone (e.g. if dataset is very different from ImageNet)
         
-        print("\nPretrain Epoch", epoch, "with batch size", trainloader_pretraining.batch_size, flush=True)
+        #print("\nPretrain Epoch", epoch, "with batch size", trainloader_pretraining.batch_size, flush=True)
 
         # Pretrain prototypes
-        train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, scheduler_net, None, criterion, epoch, args.epochs_pretrain, class_mpc, device, pretrain=True, finetune=False)
-        lrs_pretrain_net+=train_info['lrs_net']
-        plt.clf()
-        plt.plot(lrs_pretrain_net)
-        plt.savefig(os.path.join(args.log_dir,'lr_pretrain_net.png'))
-        log.log_values('log_epoch_overview', epoch, "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", train_info['loss'])
+        #train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, scheduler_net, None, criterion, epoch, args.epochs_pretrain, class_mpc, device, pretrain=True, finetune=False)
+        #lrs_pretrain_net+=train_info['lrs_net']
+        #plt.clf()
+        #plt.plot(lrs_pretrain_net)
+        #plt.savefig(os.path.join(args.log_dir,'lr_pretrain_net.png'))
+        #log.log_values('log_epoch_overview', epoch, "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", train_info['loss'])
 
     if args.state_dict_dir_net == '':
         net.eval()
         torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_pretrained'))
         net.train()
-    with torch.no_grad():
-        if 'convnext' in args.net: #and args.epochs_pretrain > 0:
-            topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_pretrained_prototypes_topk', args)
+   # with torch.no_grad():
+        #if 'convnext' in args.net: #and args.epochs_pretrain > 0:
+        #    topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_pretrained_prototypes_topk', args)
         
     # SECOND TRAINING PHASE
     # re-initialize optimizers and schedulers for second training phase
