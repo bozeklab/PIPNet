@@ -214,7 +214,7 @@ def run_pipnet(args=None):
         print("\nPretrain Epoch", epoch, "with batch size", trainloader_pretraining.batch_size, flush=True)
 
         # Pretrain prototypes
-        train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, optimizer_classifier, scheduler_net, None, criterion, epoch, args.epochs_pretrain, class_mpc, device, pretrain=True, finetune=False)
+        train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, scheduler_net, None, criterion, epoch, args.epochs_pretrain, class_mpc, device, pretrain=True, finetune=False)
         lrs_pretrain_net+=train_info['lrs_net']
         plt.clf()
         plt.plot(lrs_pretrain_net)

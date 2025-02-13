@@ -11,7 +11,7 @@ from pipnet.cka_loss import CKA_loss
 from util.vis_pipnet import visualize_dist, build_image_grid, visualize_two_dists
 
 
-def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch', writer=None):
+def train_pipnet(net, train_loader, optimizer_net, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch', writer=None):
 
     # Make sure the model is in train mode
     net.train()
@@ -106,7 +106,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
        
         # Reset the gradients
-        optimizer_classifier.zero_grad(set_to_none=True)
+        #optimizer_classifier.zero_grad(set_to_none=True)
         optimizer_net.zero_grad(set_to_none=True)
        
         # Perform a forward pass through the network
@@ -118,7 +118,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         loss.backward()
 
         if not pretrain:
-            optimizer_classifier.step()   
+            #optimizer_classifier.step()
             scheduler_classifier.step(epoch - 1 + (i/iters))
             lrs_class.append(scheduler_classifier.get_last_lr()[0])
      
