@@ -1,3 +1,4 @@
+
 import torch.nn as nn
 import torch
 
@@ -57,3 +58,10 @@ class CCD_loss(nn.Module):
         diff_class = torch.mean(torch.sum(diff_dist, dim=1) / denominator)
         total_loss = (same_class + diff_class)
         return total_loss
+
+
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()

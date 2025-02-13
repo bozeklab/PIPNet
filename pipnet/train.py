@@ -7,8 +7,8 @@ import torch.optim
 import torch.utils.data
 import math
 
-from pipnet.cka_loss import CKA_loss
 from pipnet.ccd_loss import CCD_loss
+from pipnet.cka_loss import CKA_loss
 from util.vis_pipnet import visualize_dist, build_image_grid, visualize_two_dists
 
 
@@ -160,6 +160,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     #tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
     cka = CKA_loss(concept_cha=1)
+    ccd = CCD_loss()
     ck_loss = cka.forward(feature_map=pf1) + cka.forward(feature_map=pf2)
     #print('!!! ', (align_pf_weight*a_loss_pf).item(), (0.1 * ck_loss).item())
 
@@ -168,7 +169,6 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         #loss += t_weight * t_weight * tanh_loss
         loss += ck_loss
         #print(ck_loss, tanh_loss, t_weight * tanh_loss)
-    CCD_loss = CCD_loss()
     if not pretrain:
         softmax_inputs = torch.log1p(out**net_normalization_multiplier)
 
