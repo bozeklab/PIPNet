@@ -296,7 +296,7 @@ def run_pipnet(args=None):
                     print("Classifier bias: ", net.module._classification.bias, flush=True)
                 torch.set_printoptions(profile="default")
 
-        train_info = train_pipnet(net, trainloader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, args.epochs, class_mpc, device, pretrain=False, finetune=finetune, writer=writer)
+        train_info = train_pipnet(net, trainloader, optimizer_net,  scheduler_net, criterion, epoch, args.epochs, class_mpc, device, pretrain=False, finetune=finetune, writer=writer)
         lrs_net+=train_info['lrs_net']
         lrs_classifier+=train_info['lrs_class']
         # Evaluate model

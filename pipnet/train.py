@@ -12,7 +12,7 @@ from pipnet.ccd_loss import CCD_loss
 from util.vis_pipnet import visualize_dist, build_image_grid, visualize_two_dists
 
 
-def train_pipnet(net, train_loader, optimizer_net, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch', writer=None):
+def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch', writer=None):
 
     # Make sure the model is in train mode
     net.train()
