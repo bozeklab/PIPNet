@@ -21,9 +21,8 @@ transform = transforms.Compose([
 train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, download=True)
 test_dataset = datasets.MNIST(root='./data', train=False, transform=transform, download=True)
 
-print('MNIST/train len: ', print(train_dataset))
-
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+print('MNIST/train len: ', print(train_loader))
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 # Load pretrained ConvNeXT-Tiny model
