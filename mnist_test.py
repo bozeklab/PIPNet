@@ -22,7 +22,7 @@ train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, d
 test_dataset = datasets.MNIST(root='./data', train=False, transform=transform, download=True)
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-print('MNIST/train len: ', print(len(train_loader)))
+print('MNIST/train len: ', len(train_loader))
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 # Load pretrained ConvNeXT-Tiny model
