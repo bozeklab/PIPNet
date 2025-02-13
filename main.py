@@ -94,7 +94,7 @@ def run_pipnet(args=None):
     net = net.to(device=device)
     net = nn.DataParallel(net, device_ids = device_ids)    
     
-    optimizer_net, optimizer_classifier, params_to_freeze, params_to_train, params_backbone = get_optimizer_nn(net, args)   
+    optimizer_net, params_to_freeze, params_to_train, params_backbone = get_optimizer_nn(net, args)
 
     # Initialize or load model
     with torch.no_grad():
@@ -108,26 +108,26 @@ def run_pipnet(args=None):
                 optimizer_net.load_state_dict(checkpoint['optimizer_net_state_dict']) 
             except:
                 pass
-            if torch.mean(net.module._classification.weight).item() > 1.0 and torch.mean(net.module._classification.weight).item() < 3.0 and torch.count_nonzero(torch.relu(net.module._classification.weight-1e-5)).float().item() > 0.8*(num_prototypes*len(classes)): #assume that the linear classification layer is not yet trained (e.g. when loading a pretrained backbone only)
-                print("We assume that the classification layer is not yet trained. We re-initialize it...", flush=True)
-                torch.nn.init.normal_(net.module._classification.weight, mean=1.0,std=0.1) 
-                torch.nn.init.constant_(net.module._multiplier, val=2.)
-                print("Classification layer initialized with mean", torch.mean(net.module._classification.weight).item(), flush=True)
-                if args.bias:
-                    torch.nn.init.constant_(net.module._classification.bias, val=0.)
+            #if torch.mean(net.module._classification.weight).item() > 1.0 and torch.mean(net.module._classification.weight).item() < 3.0 and torch.count_nonzero(torch.relu(net.module._classification.weight-1e-5)).float().item() > 0.8*(num_prototypes*len(classes)): #assume that the linear classification layer is not yet trained (e.g. when loading a pretrained backbone only)
+            #    print("We assume that the classification layer is not yet trained. We re-initialize it...", flush=True)
+            #    torch.nn.init.normal_(net.module._classification.weight, mean=1.0,std=0.1)
+            #    torch.nn.init.constant_(net.module._multiplier, val=2.)
+            #    print("Classification layer initialized with mean", torch.mean(net.module._classification.weight).item(), flush=True)
+            #    if args.bias:
+            #        torch.nn.init.constant_(net.module._classification.bias, val=0.)
             # else: #uncomment these lines if you want to load the optimizer too
             #     if 'optimizer_classifier_state_dict' in checkpoint.keys():
             #         optimizer_classifier.load_state_dict(checkpoint['optimizer_classifier_state_dict'])
             
         else:
             net.module._add_on.apply(init_weights_xavier)
-            torch.nn.init.normal_(net.module._classification.weight, mean=1.0,std=0.1) 
-            if args.bias:
-                torch.nn.init.constant_(net.module._classification.bias, val=0.)
+            #torch.nn.init.normal_(net.module._classification.weight, mean=1.0,std=0.1)
+            #if args.bias:
+            #    torch.nn.init.constant_(net.module._classification.bias, val=0.)
             torch.nn.init.constant_(net.module._multiplier, val=2.)
             net.module._multiplier.requires_grad = False
 
-            print("Classification layer initialized with mean", torch.mean(net.module._classification.weight).item(), flush=True)
+            #print("Classification layer initialized with mean", torch.mean(net.module._classification.weight).item(), flush=True)
     
     # Define classification loss function and scheduler
     criterion = nn.NLLLoss(reduction='mean').to(device)
@@ -297,7 +297,7 @@ def run_pipnet(args=None):
                     print("Classifier bias: ", net.module._classification.bias, flush=True)
                 torch.set_printoptions(profile="default")
 
-        train_info = train_pipnet(net, trainloader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, args.epochs, class_mpc, device, pretrain=False, finetune=finetune)
+        train_info = train_pipnet(net, trainloader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, args.epochs, class_mpc, device, pretrain=False, finetune=finetune, writer=writer)
         lrs_net+=train_info['lrs_net']
         lrs_classifier+=train_info['lrs_class']
         # Evaluate model

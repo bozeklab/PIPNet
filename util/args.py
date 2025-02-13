@@ -188,33 +188,17 @@ def get_optimizer_nn(net, args: argparse.Namespace) -> torch.optim.Optimizer:
             else:
                 params_backbone.append(param)
     else:
-        print("Network is not ResNet or ConvNext.", flush=True)     
-    classification_weight = []
-    classification_bias = []
-    for name, param in net.module._classification.named_parameters():
-        if 'weight' in name:
-            classification_weight.append(param)
-        elif 'multiplier' in name:
-            param.requires_grad = False
-        else:
-            if args.bias:
-                classification_bias.append(param)
+        print("Network is not ResNet or ConvNext.", flush=True)
     
     paramlist_net = [
             {"params": params_backbone, "lr": args.lr_net, "weight_decay_rate": args.weight_decay},
             {"params": params_to_freeze, "lr": args.lr_block, "weight_decay_rate": args.weight_decay},
             {"params": params_to_train, "lr": args.lr_block, "weight_decay_rate": args.weight_decay},
             {"params": net.module._add_on.parameters(), "lr": args.lr_block*10., "weight_decay_rate": args.weight_decay}]
-            
-    paramlist_classifier = [
-            {"params": classification_weight, "lr": args.lr, "weight_decay_rate": args.weight_decay},
-            {"params": classification_bias, "lr": args.lr, "weight_decay_rate": 0},
-    ]
-          
+
     if args.optimizer == 'Adam':
         optimizer_net = torch.optim.AdamW(paramlist_net,lr=args.lr,weight_decay=args.weight_decay)
-        optimizer_classifier = torch.optim.AdamW(paramlist_classifier,lr=args.lr,weight_decay=args.weight_decay)
-        return optimizer_net, optimizer_classifier, params_to_freeze, params_to_train, params_backbone
+        return optimizer_net, params_to_freeze, params_to_train, params_backbone
     else:
         raise ValueError("this optimizer type is not implemented")
 

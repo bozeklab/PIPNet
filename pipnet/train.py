@@ -11,18 +11,17 @@ from pipnet.cka_loss import CKA_loss
 from util.vis_pipnet import visualize_dist, build_image_grid, visualize_two_dists
 
 
-def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch'):
+def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, class_mpc, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch', writer=None):
 
     # Make sure the model is in train mode
     net.train()
     
     if pretrain:
         # Disable training of classification layer
-        net.module._classification.requires_grad = False
         progress_prefix = 'Pretrain Epoch'
     else:
         # Enable training of classification layer (disabled in case of pretraining)
-        net.module._classification.requires_grad = True
+        progress_prefix = 'Train Epoch'
     
     # Store info about the procedure
     train_info = dict()
@@ -69,7 +68,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
     class_counts = torch.zeros(net.module._num_classes, device=device)
 
-    if pretrain and epoch == 3:
+    if pretrain and epoch == 1:
         for _, (xs1, xs2, ys) in class_mpc_iter:
             xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
 
@@ -148,7 +147,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     return train_info
 
 
-def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-10):
+def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, unif_weight, cl_weight, net_normalization_multiplier, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-10, writer=None):
     ys = torch.cat([ys1,ys1])
     pooled1, pooled2 = pooled.chunk(2)
     pf1, pf2 = proto_features.chunk(2)
