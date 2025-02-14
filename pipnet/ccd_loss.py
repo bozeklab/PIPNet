@@ -16,7 +16,7 @@ class CCD_loss(nn.Module):
         return basic
 
     def KL_div(self, x, y):
-        print('KL ', x.shape, y.shape)
+        print('KL ', x.shape, y.shape, x)
         print(torch.log2(x), torch.log2(y))
         return torch.sum(x * (torch.log2(x) - torch.log2(y)), dim=-1)
 
@@ -24,7 +24,7 @@ class CCD_loss(nn.Module):
         img_node = img_node.unsqueeze(1)
         cd_node = cd_node.unsqueeze(0)
         M = (img_node + cd_node) / 2
-        print('KL val: ', self.KL_div(img_node, M))
+        #print('KL val: ', self.KL_div(img_node, M))
         return (self.KL_div(img_node, M) + self.KL_div(cd_node, M)) / 2
 
     def forward(self, feat,  label, class_MCP_dist):
