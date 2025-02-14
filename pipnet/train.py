@@ -202,14 +202,14 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         #print(ck_loss, tanh_loss, t_weight * tanh_loss)
     if not pretrain:
         #softmax_inputs = torch.log1p(out**net_normalization_multiplier)
-        loss += ck_loss
+        #loss += ck_loss
         class_loss = ccd(pf1, ys1, class_mpc)
         loss += class_loss
 
-        if finetune:
-            loss= cl_weight * class_loss
-        else:
-            loss+= cl_weight * class_loss
+        #if finetune:
+        #    loss= cl_weight * class_loss
+        #else:
+        #    loss+= cl_weight * class_loss
     # Our tanh-loss optimizes for uniformity and was sufficient for our experiments. However, if pretraining of the prototypes is not working well for your dataset, you may try to add another uniformity loss from https://www.tongzhouwang.info/hypersphere/ Just uncomment the following three lines
     # else:
     #     uni_loss = (uniform_loss(F.normalize(pooled1+EPS,dim=1)) + uniform_loss(F.normalize(pooled2+EPS,dim=1)))/2.
