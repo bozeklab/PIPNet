@@ -20,7 +20,9 @@ class CCD_loss(nn.Module):
         #print(x, torch.log2(x), torch.log2(y))
         return torch.sum(x * (torch.log2(x) - torch.log2(y)), dim=-1)
 
-    def JS_div(self, img_node, cd_node):
+    def JS_div(self, img_node, cd_node, eps=1e-8):
+        img_node = img_node + eps
+        cd_node = cd_node + eps
         img_node = img_node.unsqueeze(1)
         cd_node = cd_node.unsqueeze(0)
         M = (img_node + cd_node) / 2
