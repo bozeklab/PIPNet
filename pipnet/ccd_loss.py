@@ -43,7 +43,7 @@ class CCD_loss(nn.Module):
         argmax_indices = torch.argmax(feat, dim=1, keepdim=True)
         mask = torch.zeros_like(feat).scatter_(1, argmax_indices, 1)
         proto_features = feat * mask
-        pf_s, _ = torch.sort(feat, dim=1)
+        pf_s, _ = torch.sort(proto_features, dim=1)
         proto_features = pf_s.squeeze(dim=2).flatten(2)
 
         #img_MCP_dist = torch.cat(max_responses, dim=1)
@@ -51,6 +51,7 @@ class CCD_loss(nn.Module):
         print('!!! ', proto_features.shape, class_MCP_dist.shape)
         MCP_dist = self.JS_div(proto_features, class_MCP_dist)
         print('!!! ', proto_features.shape, class_MCP_dist.shape)
+        print('!!! MCP_dist ', MCP_dist.shape)
         same_class = torch.mean(torch.gather(MCP_dist, dim=1, index=label[:, None]))
         mask = torch.ones_like(MCP_dist)
         mask[(torch.arange(label.shape[0]), label)] = 0
