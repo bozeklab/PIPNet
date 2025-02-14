@@ -17,7 +17,7 @@ class CCD_loss(nn.Module):
 
     def KL_div(self, x, y):
         print('KL ', x.shape, y.shape, x)
-        print(x, torch.log2(x), torch.log2(y))
+        #print(x, torch.log2(x), torch.log2(y))
         return torch.sum(x * (torch.log2(x) - torch.log2(y)), dim=-1)
 
     def JS_div(self, img_node, cd_node):
@@ -54,7 +54,7 @@ class CCD_loss(nn.Module):
         #print('!!! ', proto_features.shape, class_MCP_dist.shape)
         MCP_dist = self.JS_div(proto_features, class_MCP_dist)
         #print('!!! ', proto_features.shape, class_MCP_dist.shape)
-        #print('!!! MCP_dist ', MCP_dist.shape)
+        print('!!! MCP_dist ', MCP_dist.shape)
         #print('!!! label ', label[:, None, None].shape)
         same_class = torch.mean(torch.gather(MCP_dist, dim=1, index=label[:, None, None]))
         mask = torch.ones_like(MCP_dist)
