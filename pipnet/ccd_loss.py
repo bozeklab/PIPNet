@@ -17,6 +17,7 @@ class CCD_loss(nn.Module):
 
     def KL_div(self, x, y):
         print('KL ', x.shape, y.shape)
+        print(torch.log2(x), torch.log2(y))
         return torch.sum(x * (torch.log2(x) - torch.log2(y)), dim=-1)
 
     def JS_div(self, img_node, cd_node):
