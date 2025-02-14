@@ -175,8 +175,12 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
                 #
                 class_counts[c] += (ys == c).sum()
         class_mpc /= class_counts.view(-1, 1, 1)
-        class_mpc *= 100.0
-
+        dist_ps = []
+        for p in range(32):
+            dist_ps.append(visualize_two_dists(class_mpc[0, p, :].detach().cpu(), class_mpc[1, p, :].detach().cpu()))
+        grid_image = build_image_grid(dist_ps)
+        save_path = os.path.join('/data/pwojcik/PIPNet/', f"{epoch}_class_grid.png")
+        grid_image.save(save_path)
     return train_info
 
 
