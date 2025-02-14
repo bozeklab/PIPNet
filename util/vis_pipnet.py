@@ -22,7 +22,7 @@ def visualize_dist(data):
     #plt.xlabel('position')
     #plt.ylabel('strength')
     #plt.title(f'Class {y}', y)
-
+    plt.legend()
     img_buffer = io.BytesIO()
     plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
     plt.close()
