@@ -204,7 +204,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         #softmax_inputs = torch.log1p(out**net_normalization_multiplier)
         loss += ck_loss
         class_loss = ccd(pf1, ys1, class_mpc)
-
+        loss += class_loss
 
         if finetune:
             loss= cl_weight * class_loss
