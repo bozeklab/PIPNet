@@ -88,6 +88,7 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
                     #mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
     #
                     class_counts[c] += (ys == c).sum()
+            class_mpc = torch.sort(class_mpc, dim=2)
             class_mpc /= class_counts.view(-1, 1, 1)
             class_mpc *= 100.0
 

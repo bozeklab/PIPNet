@@ -48,6 +48,7 @@ class CCD_loss(nn.Module):
         argmax_indices = torch.argmax(feat, dim=1, keepdim=True)
         mask = torch.zeros_like(feat).scatter_(1, argmax_indices, 1)
         proto_features = feat * mask
+        print('!! proto_features.shape')
         pf_s, _ = torch.sort(proto_features, dim=1)
         proto_features = pf_s.squeeze(dim=2).flatten(2)
 

@@ -195,7 +195,7 @@ def run_pipnet(args=None):
         log.create_log('log_epoch_overview', 'epoch', 'test_top1_acc', 'test_top5_acc', 'almost_sim_nonzeros', 'local_size_all_classes','almost_nonzeros_pooled', 'num_nonzero_prototypes', 'mean_train_acc', 'mean_train_loss_during_epoch')
 
     class_mpc = torch.zeros(net.module._num_classes, num_prototypes,
-                            proto_features.shape[-1] * proto_features.shape[-2]).cuda()
+                            proto_features.shape[-1] * proto_features.shape[-2], requires_grad = False).cuda()
 
     lrs_pretrain_net = []
     # PRETRAINING PROTOTYPES PHASE
