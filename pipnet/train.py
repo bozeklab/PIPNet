@@ -193,6 +193,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     cka = CKA_loss(concept_cha=1)
     ccd = CCD_loss()
     ck_loss = cka.forward(feature_map=pf1) + cka.forward(feature_map=pf2)
+    print('CKA: ', ck_loss.item())
     #print('!!! ', (align_pf_weight*a_loss_pf).item(), (0.1 * ck_loss).item())
 
     if not finetune:
