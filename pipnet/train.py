@@ -171,7 +171,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         #print(ck_loss, tanh_loss, t_weight * tanh_loss)
     if not pretrain:
         #softmax_inputs = torch.log1p(out**net_normalization_multiplier)
-
+        loss += ck_loss
         class_loss = ccd(pf1, ys1, class_mpc)
 
         if finetune:
@@ -185,9 +185,10 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
 
     acc=0.
     if not pretrain:
-        ys_pred_max = torch.argmax(out, dim=1)
-        correct = torch.sum(torch.eq(ys_pred_max, ys))
-        acc = correct.item() / float(len(ys))
+        #ys_pred_max = torch.argmax(out, dim=1)
+        #correct = torch.sum(torch.eq(ys_pred_max, ys))
+        #acc = correct.item() / float(len(ys))
+        acc = None
     if print_db:
         with torch.no_grad():
             if pretrain:
@@ -199,7 +200,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
                     f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
                 else:
                     train_iter.set_postfix_str(
-                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
+                    f'L:{loss.item():.3f},CCD:{class_loss.item():.3f}, CKA:{ck_loss.item():.5f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
     return loss, acc
 
 # Extra uniform loss from https://www.tongzhouwang.info/hypersphere/. Currently not used but you could try adding it if you want. 
