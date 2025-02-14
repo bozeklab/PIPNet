@@ -205,6 +205,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
         loss += ck_loss
         class_loss = ccd(pf1, ys1, class_mpc)
 
+
         if finetune:
             loss= cl_weight * class_loss
         else:

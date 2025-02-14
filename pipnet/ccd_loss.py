@@ -62,6 +62,7 @@ class CCD_loss(nn.Module):
         denominator[denominator == 0] = 1
         diff_class = torch.mean(torch.sum(diff_dist, dim=1) / denominator)
         total_loss = (same_class + diff_class)
+        print(total_loss)
         return total_loss
 
 

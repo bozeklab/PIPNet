@@ -300,27 +300,27 @@ def run_pipnet(args=None):
         lrs_net+=train_info['lrs_net']
         lrs_classifier+=train_info['lrs_class']
         # Evaluate model
-        eval_info = eval_pipnet(net, testloader, epoch, device, log)
-        log.log_values('log_epoch_overview', epoch, eval_info['top1_accuracy'], eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'], eval_info['local_size_all_classes'], eval_info['almost_nonzeros'], eval_info['num non-zero prototypes'], train_info['train_accuracy'], train_info['loss'])
+        #eval_info = eval_pipnet(net, testloader, epoch, device, log)
+        #log.log_values('log_epoch_overview', epoch, eval_info['top1_accuracy'], eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'], eval_info['local_size_all_classes'], eval_info['almost_nonzeros'], eval_info['num non-zero prototypes'], train_info['train_accuracy'], train_info['loss'])
             
-        with torch.no_grad():
-            net.eval()
-            torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained'))
-
-            if epoch%30 == 0:
-                net.eval()
-                torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained_%s'%str(epoch)))            
-        
-            # save learning rate in figure
-            plt.clf()
-            plt.plot(lrs_net)
-            plt.savefig(os.path.join(args.log_dir,'lr_net.png'))
-            plt.clf()
-            plt.plot(lrs_classifier)
-            plt.savefig(os.path.join(args.log_dir,'lr_class.png'))
+        # with torch.no_grad():
+        #     net.eval()
+        #     torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained'))
+        #
+        #     if epoch%30 == 0:
+        #         net.eval()
+        #         torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained_%s'%str(epoch)))
+        #
+        #     # save learning rate in figure
+        #     plt.clf()
+        #     plt.plot(lrs_net)
+        #     plt.savefig(os.path.join(args.log_dir,'lr_net.png'))
+        #     plt.clf()
+        #     plt.plot(lrs_classifier)
+        #     plt.savefig(os.path.join(args.log_dir,'lr_class.png'))
                 
-    net.eval()
-    torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained_last'))
+    #net.eval()
+    #torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict(), 'optimizer_classifier_state_dict': optimizer_classifier.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_trained_last'))
 
     topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk', args)
     # set weights of prototypes that are never really found in projection set to 0
