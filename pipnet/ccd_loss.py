@@ -52,8 +52,8 @@ class CCD_loss(nn.Module):
         MCP_dist = self.JS_div(proto_features, class_MCP_dist)
         print('!!! ', proto_features.shape, class_MCP_dist.shape)
         print('!!! MCP_dist ', MCP_dist.shape)
-        print('!!! label ', label[:, None].shape)
-        same_class = torch.mean(torch.gather(MCP_dist, dim=1, index=label[:, None]))
+        print('!!! label ', label[:, None, None].shape)
+        same_class = torch.mean(torch.gather(MCP_dist, dim=1, index=label[:, None, None]))
         mask = torch.ones_like(MCP_dist)
         mask[(torch.arange(label.shape[0]), label)] = 0
         diff_dist = self.relu((self.margin - MCP_dist) * mask)
