@@ -116,18 +116,21 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
         loss, acc = calculate_loss(proto_features, pooled, out, ys, align_pf_weight, t_weight, unif_weight,  cl_weight, class_mpc, pretrain, finetune, criterion, train_iter, print_db=True, EPS=1e-8)
         
         # Compute the gradient
+        print('backward')
         loss.backward()
-
+        #optimizer_net.step()
         #if not pretrain:
             #optimizer_classifier.step()
             #scheduler_classifier.step(epoch - 1 + (i/iters))
             #lrs_class.append(scheduler_classifier.get_last_lr()[0])
      
         if not finetune:
+            print('not finetune back')
             optimizer_net.step()
             scheduler_net.step() 
             lrs_net.append(scheduler_net.get_last_lr()[0])
         else:
+            print('ft back')
             lrs_net.append(0.)
             
         with torch.no_grad():
