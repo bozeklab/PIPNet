@@ -69,7 +69,7 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
 
     class_counts = torch.zeros(net.module._num_classes, device=device)
 
-    if epoch == 1:
+    if epoch == 0:
         with torch.no_grad():
             for _, (xs1, xs2, ys) in class_mpc_iter:
                 xs1, xs2, ys = xs1.to(device), xs2.to(device), ys.to(device)
