@@ -84,7 +84,9 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
                     #print(F.mse_loss(proto_features[ys == 0, ...].flatten(2).sum(0), proto_features[ys == 1, ...].flatten(2).sum(0)))
                     pf = proto_features[ys == c, ...].flatten(2).sum(0)
                     #pf_s, _ = torch.sort(pf, dim=1)
-                    class_mpc[c, ...] += pf
+                    pf_s, _ = torch.sort(pf, dim=1)
+                    class_mpc[c, ...] += pf_s
+                    class_mpc, _ = torch.sort(class_mpc, dim=2)
                     #mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
     #
                     class_counts[c] += (ys == c).sum()
@@ -171,12 +173,13 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
                 # print('!!! c == ', c,  proto_features[ys == c, ...].shape, class_mpc[c, ...].shape, ys.shape)
                 # print(F.mse_loss(proto_features[ys == 0, ...].flatten(2).sum(0), proto_features[ys == 1, ...].flatten(2).sum(0)))
                 pf = proto_features[ys == c, ...].flatten(2).sum(0)
-                class_mpc[c, ...] += pf
+                pf_s, _ = torch.sort(pf, dim=1)
+                class_mpc[c, ...] += pf_s
+                class_mpc, _ = torch.sort(class_mpc, dim=2)
                 #mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
                 #
                 class_counts[c] += (ys == c).sum()
         class_mpc /= class_counts.view(-1, 1, 1)
-        class_mpc, _ = torch.sort(class_mpc, dim=2)
         dist_ps = []
         for p in range(32):
             dist_ps.append(visualize_two_dists(class_mpc[0, p, :].detach().cpu(), class_mpc[1, p, :].detach().cpu()))
