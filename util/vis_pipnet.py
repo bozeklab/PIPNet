@@ -70,6 +70,7 @@ def build_image_grid(images):
         ax.axis('off')
 
     fig.canvas.draw()
+    plt.legend()
     img = Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba()))  # Convert to PIL Image
     plt.close(fig)
 
