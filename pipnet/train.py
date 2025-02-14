@@ -103,7 +103,7 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
         for p in range(32):
             dist_ps.append(visualize_two_dists(class_mpc[0, p, :].detach().cpu(), class_mpc[1, p, :].detach().cpu()))
         grid_image = build_image_grid(dist_ps)
-        save_path = os.path.join('/data/pwojcik/PIPNet/', f"{epoch}_class_grid.png")
+        save_path = os.path.join('/data/pwojcik/PIPNet/', f"start_class_grid.png")
         grid_image.save(save_path)
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, ys) in train_iter:       
@@ -177,8 +177,8 @@ def train_pipnet(net, train_loader, optimizer_net, scheduler_net, criterion, epo
                 class_mpc[c, ...] += pf_s
                 class_mpc, _ = torch.sort(class_mpc, dim=2)
                 #mse_loss = F.mse_loss(class_mpc[0], class_mpc[1])
-                #
                 class_counts[c] += (ys == c).sum()
+        class_mpc, _ = torch.sort(class_mpc, dim=2)
         class_mpc /= class_counts.view(-1, 1, 1)
         dist_ps = []
         for p in range(32):
@@ -207,7 +207,7 @@ def calculate_loss(proto_features, pooled, out, ys1, align_pf_weight, t_weight, 
     #print('!!! ', (align_pf_weight*a_loss_pf).item(), (0.1 * ck_loss).item())
 
     if not finetune:
-        loss = align_pf_weight*a_loss_pf
+        loss = 0.0#align_pf_weight*a_loss_pf
         #loss += t_weight * t_weight * tanh_loss
         loss += ck_loss
         #print(ck_loss, tanh_loss, t_weight * tanh_loss)
