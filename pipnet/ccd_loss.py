@@ -50,6 +50,7 @@ class CCD_loss(nn.Module):
         #img_MCP_dist = img_MCP_dist / torch.sum(img_MCP_dist, dim=-1, keepdim=True)
         #print('!!! ', proto_features.shape, class_MCP_dist.shape)
         MCP_dist = self.JS_div(proto_features, class_MCP_dist)
+        print(MCP_dist)
         #print('!!! ', proto_features.shape, class_MCP_dist.shape)
         #print('!!! MCP_dist ', MCP_dist.shape)
         #print('!!! label ', label[:, None, None].shape)
@@ -59,7 +60,6 @@ class CCD_loss(nn.Module):
         diff_dist = self.relu((self.margin - MCP_dist) * mask)
         denominator = torch.sum(diff_dist != 0, dim=1)
         # prevent divided by zero
-        print('!! forward')
         denominator[denominator == 0] = 1
         diff_class = torch.mean(torch.sum(diff_dist, dim=1) / denominator)
         total_loss = (same_class + diff_class)
