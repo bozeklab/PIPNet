@@ -75,5 +75,6 @@ class CCD_loss(nn.Module):
 def main():
     pass
 
+
 if __name__ == "__main__":
     main()
