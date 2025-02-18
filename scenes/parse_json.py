@@ -138,11 +138,11 @@ def print_all_shapes_and_colors(filename):
 
 if __name__ == "__main__":
     # Specify the path to your JSON file here
-    filename = "/data_ssd/pwojcik/CLEVR_v1.0/scenes/CLEVR_train_scenes.json"
+    filename = "/data_ssd/pwojcik/CLEVR_v1.0/scenes/CLEVR_test_scenes.json"
     print_all_shapes_and_colors(filename)
     copy_images_based_on_object_instances(json_filename=filename, target_shape='cube', target_color= 'green',
-                                          source_folder='/data_ssd/pwojcik/CLEVR_v1.0/images/train',
-                                          dest_folder_multiple='/data_ssd/pwojcik/CLEVR_v1.0/multi_green_cube/train',
-                                          dest_folder_single='/data_ssd/pwojcik/CLEVR_v1.0/single_green_cube/train')
+                                          source_folder='/data_ssd/pwojcik/CLEVR_v1.0/images/test',
+                                          dest_folder_multiple='/data_ssd/pwojcik/CLEVR_v1.0/multi_green_cube/test',
+                                          dest_folder_single='/data_ssd/pwojcik/CLEVR_v1.0/single_green_cube/test')
     #list_green_cube_objects(filename)
     #process_json_file(filename)
