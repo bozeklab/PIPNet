@@ -3,8 +3,8 @@ python main.py \
      --validation_size 0.0 \
      --net 'convnext_tiny_26' \
      --batch_size 64 \
-    --batch_size_pretrain 128 \
-     --epochs 60 \
+     --batch_size_pretrain 128 \
+     --epochs 10 \
      --optimizer 'Adam' \
      --lr 0.05 \
      --lr_block 0.0005 \
