@@ -1,0 +1,21 @@
+python main.py \
+     --dataset 'SHAPE' \
+     --validation_size 0.0 \
+     --net 'convnext_tiny_26' \
+     --batch_size 64 \
+    --batch_size_pretrain 128 \
+     --epochs 60 \
+     --optimizer 'Adam' \
+     --lr 0.05 \
+     --lr_block 0.0005 \
+     --lr_net 0.0005 \
+     --weight_decay 0.0 \
+     --log_dir './runs/pipnet_shapes_cnext26' \
+     --num_features 0 \
+     --image_size 224 \
+     --state_dict_dir_net '' \
+     --freeze_epochs 10 \
+     --dir_for_saving_images 'Visualization_results' \
+     --epochs_pretrain 10 \
+     --seed 1 \
+     --num_workers 8
