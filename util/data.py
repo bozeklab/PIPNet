@@ -27,7 +27,7 @@ def get_data(args: argparse.Namespace):
     if args.dataset == 'CARS':
         return get_cars(True, './data/cars/dataset/train', './data/cars/dataset/train', './data/cars/dataset/test', args.image_size, args.seed, args.validation_size)
     if args.dataset == 'SHAPES':
-        return get_shapes(True, './data/SHAPE/train', './data/SHAPE/train', './data/SHAPE/test', args.image_size, args.seed, args.validation_size)
+        return get_shapes(True, './data/SHAPES/train', './data/SHAPES/train', './data/SHAPES/test', args.image_size, args.seed, args.validation_size)
     if args.dataset == 'grayscale_example':
         return get_grayscale(True, './data/train', './data/train', './data/test', args.image_size, args.seed, args.validation_size)
     raise Exception(f'Could not load data set, data set "{args.dataset}" not found!')
