@@ -1,5 +1,5 @@
 python main.py \
-     --dataset 'SHAPE' \
+     --dataset 'SHAPES' \
      --validation_size 0.0 \
      --net 'convnext_tiny_26' \
      --batch_size 64 \
