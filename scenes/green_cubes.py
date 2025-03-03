@@ -5,7 +5,7 @@ import shutil
 # Load JSON file
 json_path = "/data/pwojcik/whole_scene_data.json"
 image_folder = "/data/pwojcik/images/"  # Update with correct path
-destination_folder = "/data/pwojcik/shapes4/train/cubes_1_3/"
+destination_folder = "/data/pwojcik/shapes4/train/cubes_4_10/"
 
 with open(json_path, "r") as file:
     data = json.load(file)
@@ -19,7 +19,7 @@ for filename, details in data.items():
         1 for obj in details["objects"] if obj["shape"] == "cube" and obj["color"] == "green"
     )
 
-    if 1 <= green_cube_count <= 3:
+    if 4 <= green_cube_count <= 10:
         matching_filenames.append(filename)
 
 # Copy matching files
