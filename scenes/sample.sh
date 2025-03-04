@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Set source and destination folders
-SOURCE_FOLDER="/data/pwojcik/shapes4/train/cubes_1_3/"
-DEST_FOLDER="/data/pwojcik/shapes4/test/cubes_1_3/"
+SOURCE_FOLDER="/data/pwojcik/shapes4/train/cubes_4_10/"
+DEST_FOLDER="/data/pwojcik/shapes4/test/cubes_4_10/"
 
 # Create destination folder if it doesn't exist
 mkdir -p "$DEST_FOLDER"
