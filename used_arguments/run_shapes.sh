@@ -10,7 +10,7 @@ python main.py \
      --lr_block 0.0005 \
      --lr_net 0.0005 \
      --weight_decay 0.0 \
-     --log_dir './runs/pipnet_shapes_cnext26' \
+     --log_dir './runs/pipnet_shapes_cnext26_clevr4' \
      --num_features 0 \
      --image_size 224 \
      --state_dict_dir_net '' \
