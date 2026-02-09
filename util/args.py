@@ -31,7 +31,7 @@ def get_args() -> argparse.Namespace:
                         help='Batch size when training the model using minibatch gradient descent. Batch size is multiplied with number of available GPUs')
     parser.add_argument('--vit_path',
                         type=str,
-                        default='/data/pwojcik/PIPNet/teacher_checkpoint.pth',
+                        default='/home/pwojcik/PIPNet/teacher_checkpoint.pth',
                         help='Path to the pre-trained ViT (DINOv2)')
 
     parser.add_argument('--batch_size_pretrain',
