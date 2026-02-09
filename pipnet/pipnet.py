@@ -97,6 +97,7 @@ def get_network(num_classes: int, args: argparse.Namespace):
         vit = torch.hub.load("facebookresearch/dinov2", args.net)
         # load finetuned weights
         pretrained = torch.load(args.vit_path, map_location=torch.device('cpu'))
+        print(vit.pos_embed.shape)
         # make correct state dict for loading
         new_state_dict = {}
         for key, value in pretrained['teacher'].items():
