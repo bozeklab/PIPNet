@@ -400,22 +400,52 @@ def run_pipnet(args=None):
     print("Done!", flush=True)
 
 
+import sys
+
+class Tee:
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, data):
+        for f in self.files:
+            f.write(data)
+            f.flush()
+
+    def flush(self):
+        for f in self.files:
+            f.flush()
+
+
 if __name__ == '__main__':
     args = get_args()
+
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     random.seed(args.seed)
     np.random.seed(args.seed)
-    print_dir = os.path.join(args.log_dir,'out.txt')
-    tqdm_dir = os.path.join(args.log_dir,'tqdm.txt')
-    if not os.path.isdir(args.log_dir):
-        os.mkdir(args.log_dir)
-    
-    sys.stdout.close()
-    sys.stderr.close()
-    sys.stdout = open(print_dir, 'w')
-    sys.stderr = open(tqdm_dir, 'w')
+
+    os.makedirs(args.log_dir, exist_ok=True)
+
+    print_dir = os.path.join(args.log_dir, 'out.txt')
+    tqdm_dir = os.path.join(args.log_dir, 'tqdm.txt')
+
+    # Open log files
+    stdout_file = open(print_dir, 'w')
+    stderr_file = open(tqdm_dir, 'w')
+
+    # Keep original streams
+    orig_stdout = sys.stdout
+    orig_stderr = sys.stderr
+
+    # Tee output: terminal + file
+    sys.stdout = Tee(orig_stdout, stdout_file)
+    sys.stderr = Tee(orig_stderr, stderr_file)
+
     run_pipnet(args)
-    
-    sys.stdout.close()
-    sys.stderr.close()
+
+    # Restore streams (important!)
+    sys.stdout = orig_stdout
+    sys.stderr = orig_stderr
+
+    stdout_file.close()
+    stderr_file.close()

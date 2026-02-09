@@ -89,38 +89,8 @@ class NonNegLinear(nn.Module):
         return F.linear(input,torch.relu(self.weight), self.bias)
 
 
-def get_dino_bloom(modelpath="/content/dinobloom-s.pth",modelname="dinov2_vits14"):
-    embed_sizes={"dinov2_vits14": 384,
-        "dinov2_vitb14": 768,
-        "dinov2_vitl14": 1024,
-        "dinov2_vitg14": 1536}
-    # load the original DINOv2 model with the correct architecture and parameters.
-    model=torch.hub.load('facebookresearch/dinov2', modelname)
-    # load finetuned weights
-    pretrained = torch.load(modelpath, map_location=torch.device('cpu'))
-    # make correct state dict for loading
-    new_state_dict = {}
-    for key, value in pretrained['teacher'].items():
-        if 'dino_head' in key or "ibot_head" in key:
-            pass
-        else:
-            new_key = key.replace('backbone.', '')
-            new_state_dict[new_key] = value
-
-    #corresponds to 224x224 image. patch size=14x14 => 16*16 patches
-    pos_embed = torch.nn.Parameter(torch.zeros(1, 257, embed_sizes[modelname]))
-    model.pos_embed = pos_embed
-
-    model.load_state_dict(new_state_dict, strict=True)
-    return model
-
 
 def get_network(num_classes: int, args: argparse.Namespace):
-    embed_sizes={"dinov2_vits14": 384,
-        "dinov2_vitb14": 768,
-        "dinov2_vitl14": 1024,
-        "dinov2_vitg14": 1536}
-
     # ---- DINOv2 branch ----
     if args.net.startswith("dinov2_"):
         # Load DINOv2 backbone from torch hub
