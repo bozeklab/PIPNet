@@ -29,6 +29,11 @@ def get_args() -> argparse.Namespace:
                         type=int,
                         default=64,
                         help='Batch size when training the model using minibatch gradient descent. Batch size is multiplied with number of available GPUs')
+    parser.add_argument('--vit_path',
+                        type=str,
+                        default='/data/pwojcik/cytosae/teacher_checkpoint.pth',
+                        help='Path to the pre-trained ViT (DINOv2)')
+
     parser.add_argument('--batch_size_pretrain',
                         type=int,
                         default=128,

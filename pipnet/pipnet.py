@@ -2,6 +2,8 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from features.dino_features import DinoV2Features
 from features.resnet_features import resnet18_features, resnet34_features, resnet50_features, resnet101_features, resnet152_features
 from features.convnext_features import convnext_tiny_26_features, convnext_tiny_13_features 
 import torch
@@ -87,17 +89,71 @@ class NonNegLinear(nn.Module):
         return F.linear(input,torch.relu(self.weight), self.bias)
 
 
-def get_network(num_classes: int, args: argparse.Namespace): 
-    features = base_architecture_to_features[args.net](pretrained=not args.disable_pretrained)
-    features_name = str(features).upper()
-    if 'next' in args.net:
-        features_name = str(args.net).upper()
-    if features_name.startswith('RES') or features_name.startswith('CONVNEXT'):
-        first_add_on_layer_in_channels = \
-            [i for i in features.modules() if isinstance(i, nn.Conv2d)][-1].out_channels
+def get_dino_bloom(modelpath="/content/dinobloom-s.pth",modelname="dinov2_vits14"):
+    embed_sizes={"dinov2_vits14": 384,
+        "dinov2_vitb14": 768,
+        "dinov2_vitl14": 1024,
+        "dinov2_vitg14": 1536}
+    # load the original DINOv2 model with the correct architecture and parameters.
+    model=torch.hub.load('facebookresearch/dinov2', modelname)
+    # load finetuned weights
+    pretrained = torch.load(modelpath, map_location=torch.device('cpu'))
+    # make correct state dict for loading
+    new_state_dict = {}
+    for key, value in pretrained['teacher'].items():
+        if 'dino_head' in key or "ibot_head" in key:
+            pass
+        else:
+            new_key = key.replace('backbone.', '')
+            new_state_dict[new_key] = value
+
+    #corresponds to 224x224 image. patch size=14x14 => 16*16 patches
+    pos_embed = torch.nn.Parameter(torch.zeros(1, 257, embed_sizes[modelname]))
+    model.pos_embed = pos_embed
+
+    model.load_state_dict(new_state_dict, strict=True)
+    return model
+
+
+def get_network(num_classes: int, args: argparse.Namespace):
+    embed_sizes={"dinov2_vits14": 384,
+        "dinov2_vitb14": 768,
+        "dinov2_vitl14": 1024,
+        "dinov2_vitg14": 1536}
+
+    # ---- DINOv2 branch ----
+    if args.net.startswith("dinov2_"):
+        # Load DINOv2 backbone from torch hub
+        vit = torch.hub.load("facebookresearch/dinov2", args.net)
+        # load finetuned weights
+        pretrained = torch.load(args.vit_path, map_location=torch.device('cpu'))
+        # make correct state dict for loading
+        new_state_dict = {}
+        for key, value in pretrained['teacher'].items():
+            if 'dino_head' in key or "ibot_head" in key:
+                pass
+            else:
+                new_key = key.replace('backbone.', '')
+                new_state_dict[new_key] = value
+
+        vit.load_state_dict(new_state_dict, strict=True)
+
+        # Wrap to return a conv-like feature map
+        features = DinoV2Features(vit, which="x_norm_patchtokens")
+        features_name = args.net.upper()
+
+        first_add_on_layer_in_channels = features.out_channels
     else:
-        raise Exception('other base architecture NOT implemented')
-    
+        features = base_architecture_to_features[args.net](pretrained=not args.disable_pretrained)
+        features_name = str(features).upper()
+        if 'next' in args.net:
+            features_name = str(args.net).upper()
+        if features_name.startswith('RES') or features_name.startswith('CONVNEXT'):
+            first_add_on_layer_in_channels = \
+                [i for i in features.modules() if isinstance(i, nn.Conv2d)][-1].out_channels
+        else:
+            raise Exception('other base architecture NOT implemented')
+
     if args.num_features == 0:
         num_prototypes = 2 * first_add_on_layer_in_channels
         print("Number of prototypes: ", num_prototypes, flush=True)
