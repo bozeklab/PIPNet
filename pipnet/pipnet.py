@@ -91,6 +91,11 @@ class NonNegLinear(nn.Module):
 
 
 def get_network(num_classes: int, args: argparse.Namespace):
+    embed_sizes={"dinov2_vits14": 384,
+        "dinov2_vitb14": 768,
+        "dinov2_vitl14": 1024,
+        "dinov2_vitg14": 1536}
+    modelname = "dinov2_vitb14"
     # ---- DINOv2 branch ----
     if args.net.startswith("dinov2_"):
         # Load DINOv2 backbone from torch hub
@@ -107,7 +112,11 @@ def get_network(num_classes: int, args: argparse.Namespace):
                 new_key = key.replace('backbone.', '')
                 new_state_dict[new_key] = value
 
+        pos_embed = torch.nn.Parameter(torch.zeros(1, 257, embed_sizes[modelname]))
+        vit.pos_embed = pos_embed
+
         vit.load_state_dict(new_state_dict, strict=True)
+
 
         # Wrap to return a conv-like feature map
         features = DinoV2Features(vit, which="x_norm_patchtokens")
