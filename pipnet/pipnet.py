@@ -117,6 +117,18 @@ def get_network(num_classes: int, args: argparse.Namespace):
 
         vit.load_state_dict(new_state_dict, strict=True)
 
+        for p in vit.parameters():
+            p.requires_grad = False
+
+        # Unfreeze last N blocks
+        N = 2  # e.g. 2
+        for blk in vit.blocks[-N:]:
+            for p in blk.parameters():
+                p.requires_grad = True
+
+        # Optionally unfreeze final norm
+        for p in vit.norm.parameters():
+            p.requires_grad = True
 
         # Wrap to return a conv-like feature map
         features = DinoV2Features(vit, which="x_norm_patchtokens")
