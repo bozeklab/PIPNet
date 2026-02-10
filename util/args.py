@@ -29,6 +29,9 @@ def get_args() -> argparse.Namespace:
                         type=int,
                         default=64,
                         help='Batch size when training the model using minibatch gradient descent. Batch size is multiplied with number of available GPUs')
+    parser.add_argument('--remove_bg_fraction',
+                        type=float,
+                        default=0.3)
     parser.add_argument('--vit_path',
                         type=str,
                         default='/home/pwojcik/PIPNet/teacher_checkpoint.pth',
