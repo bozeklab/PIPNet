@@ -423,22 +423,39 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open).convert("RGB"))
                     msk_tensor = transforms.ToTensor()(mask)
                     bool_mask = create_boolean_mask(msk_tensor)
-                    img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
-                    h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
+                    img_tensor = transforms.ToTensor()(image).unsqueeze(0)  # (1, 3, H, W)
 
+                    # --- sanity / peak location in feature-map space ---
                     hm = softmaxes[0, pidx]  # [Hf, Wf]
                     peak = torch.argmax(hm)
-                    py = int(peak // hm.shape[1])  # row (height index)
-                    px = int(peak % hm.shape[1])  # col (width index)
+                    py = int(peak // hm.shape[1])  # row (h)
+                    px = int(peak % hm.shape[1])  # col (w)
 
                     print(
-                        f"Prototype {pidx}: "
-                        f"peak (h,w)=({py},{px}), "
-                        f"used (h_idx,w_idx)=({h_idx},{w_idx})"
+                        f"Prototype {pidx}: peak (h,w)=({py},{px}), used (h_idx,w_idx)=({h_idx},{w_idx})"
                     )
+
+                    # Use the peak indices for the box (avoids any upstream mismatch)
+                    h_idx, w_idx = py, px
+
+                    # --- FIXED coordinate mapping: feature-map cell -> image pixels ---
+                    Hf, Wf = hm.shape  # same as softmaxes.shape[-2:]
+
+                    h_coor_min = int(round(h_idx * img_size / Hf))
+                    h_coor_max = int(round((h_idx + 1) * img_size / Hf))
+                    w_coor_min = int(round(w_idx * img_size / Wf))
+                    w_coor_max = int(round((w_idx + 1) * img_size / Wf))
+
+                    # Clamp to valid bounds (prevents edge issues)
+                    H, W = img_tensor.shape[-2], img_tensor.shape[-1]
+                    h_coor_min = max(0, min(h_coor_min, H))
+                    h_coor_max = max(0, min(h_coor_max, H))
+                    w_coor_min = max(0, min(w_coor_min, W))
+                    w_coor_max = max(0, min(w_coor_max, W))
 
                     img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
+
                     saved[p]+=1
                     tensors_per_prototype[p].append((img_tensor_patch, found_max))
 
