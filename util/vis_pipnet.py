@@ -185,7 +185,6 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
         print('Jaccard: ', statistics.mean(m_jaccard))
     all_tensors = []
     for p in range(net.module._num_prototypes):
-        print(p, saved[p])
         if saved[p]>0:
             # add text next to each topk-grid, to easily see which prototype it is
             text = "P "+str(p)
@@ -198,12 +197,10 @@ def visualize_topk(net, projectloader, num_classes, device, foldername, args: ar
             try:
                 for i in range(len(tensors_per_prototype[p])):
                     print(tensors_per_prototype[p][i].shape)
-                print()
                 grid = torchvision.utils.make_grid(tensors_per_prototype[p], nrow=k+1, padding=1)
                 torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_%s.png"%(str(p))))
                 if saved[p]>=k:
                     all_tensors+=tensors_per_prototype[p]
-                print('yes saved')
             except Exception as e:
                 print(f"Something is wrong: {e}")
     if len(all_tensors)>0:
@@ -428,6 +425,18 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     bool_mask = create_boolean_mask(msk_tensor)
                     img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
                     h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
+
+                    hm = softmaxes[0, pidx]  # [Hf, Wf]
+                    peak = torch.argmax(hm)
+                    py = int(peak // hm.shape[1])  # row (height index)
+                    px = int(peak % hm.shape[1])  # col (width index)
+
+                    print(
+                        f"Prototype {pidx}: "
+                        f"peak (h,w)=({py},{px}), "
+                        f"used (h_idx,w_idx)=({h_idx},{w_idx})"
+                    )
+
                     img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     saved[p]+=1
