@@ -443,7 +443,7 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     heatmap_img = 0.2 * np.float32(heatmap) + 0.6 * np.float32(
                         img_tensor.squeeze().numpy().transpose(1, 2, 0))
 
-
+                    print('Prototype ', p, torch.sum(msk_tensor_patch).item())
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
                     if num_white_pixels >= 100:
                         boundary_color = "red"
