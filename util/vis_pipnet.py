@@ -377,7 +377,6 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
             proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
 
         for p in range(0, net.module._num_prototypes):
-            patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
             if p >= net.module._num_prototypes // 2:
                 img_size = args.image_size_ds
                 softmaxes = proto_features_ds
@@ -468,6 +467,14 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                     heatmap = heatmap[..., ::-1]  # OpenCV's BGR to RGB
                     heatmap_img = 0.2 * np.float32(heatmap) + 0.6 * np.float32(
                         img_tensor.squeeze().numpy().transpose(1, 2, 0))
+
+                    Hf, Wf = hm.shape
+                    Himg, Wimg = img_tensor.shape[-2], img_tensor.shape[-1]  # should be img_size,img_size
+
+                    cell_h = Himg / Hf
+                    cell_w = Wimg / Wf
+                    print("img_size:", img_size, "hm:", (Hf, Wf), "cell(px):", (cell_h, cell_w))
+                    print("box:", h_coor_min, h_coor_max, w_coor_min, w_coor_max)
 
                     print('Prototype ', p, torch.sum(msk_tensor_patch).item())
                     num_white_pixels = torch.sum(msk_tensor_patch).item()
