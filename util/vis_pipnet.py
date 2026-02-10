@@ -435,23 +435,23 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
                         f"Prototype {pidx}: peak (h,w)=({py},{px}), used (h_idx,w_idx)=({h_idx},{w_idx})"
                     )
 
-                    # Use the peak indices for the box (avoids any upstream mismatch)
-                    h_idx, w_idx = py, px
+                    Hf, Wf = hm.shape
 
-                    # --- FIXED coordinate mapping: feature-map cell -> image pixels ---
-                    Hf, Wf = hm.shape  # same as softmaxes.shape[-2:]
+                    # IMPORTANT: use the *actual* image tensor size that you're slicing
+                    Himg, Wimg = img_tensor.shape[-2], img_tensor.shape[-1]
 
-                    h_coor_min = int(round(h_idx * img_size / Hf))
-                    h_coor_max = int(round((h_idx + 1) * img_size / Hf))
-                    w_coor_min = int(round(w_idx * img_size / Wf))
-                    w_coor_max = int(round((w_idx + 1) * img_size / Wf))
+                    # ViT patch size (set this correctly for your ViT: 14 for ViT-L/14, 16 for ViT-B/16, etc.)
+                    vit_patch = 14  # <-- change to your model's patch size
 
-                    # Clamp to valid bounds (prevents edge issues)
-                    H, W = img_tensor.shape[-2], img_tensor.shape[-1]
-                    h_coor_min = max(0, min(h_coor_min, H))
-                    h_coor_max = max(0, min(h_coor_max, H))
-                    w_coor_min = max(0, min(w_coor_min, W))
-                    w_coor_max = max(0, min(w_coor_max, W))
+                    # sanity: feature map grid must match image/patch geometry
+                    assert Himg % vit_patch == 0 and Wimg % vit_patch == 0, (Himg, Wimg, vit_patch)
+                    assert Hf == Himg // vit_patch and Wf == Wimg // vit_patch, (
+                    Hf, Wf, Himg // vit_patch, Wimg // vit_patch)
+
+                    h_coor_min = py * vit_patch
+                    h_coor_max = (py + 1) * vit_patch
+                    w_coor_min = px * vit_patch
+                    w_coor_max = (px + 1) * vit_patch
 
                     img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
                     msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
