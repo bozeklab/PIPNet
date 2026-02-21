@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-cd /home/pwojcik/UnGuide
+cd /home/pwojcik/PIPNet
 mkdir -p logs
 
 PY=/home/pwojcik/.conda/envs/sae/bin/python
