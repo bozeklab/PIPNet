@@ -198,7 +198,13 @@ def run_pipnet(args=None):
         plt.plot(lrs_pretrain_net)
         plt.savefig(os.path.join(args.log_dir,'lr_pretrain_net.png'))
         log.log_values('log_epoch_overview', epoch, "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", train_info['loss'])
-    
+
+        wandb.log({
+            "epoch": epoch,
+            "phase": "pretrain",
+            "train/loss": train_info["loss"],
+        }, step=epoch)
+
     if args.state_dict_dir_net == '':
         net.eval()
         torch.save({'model_state_dict': net.state_dict(), 'optimizer_net_state_dict': optimizer_net.state_dict()}, os.path.join(os.path.join(args.log_dir, 'checkpoints'), 'net_pretrained'))
