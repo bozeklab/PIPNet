@@ -11,18 +11,22 @@
 
 set -euo pipefail
 
-cd /home/pwojcik/PIPNet
+cd /home/pwojcik/UnGuide
 mkdir -p logs
-
-# Correct env path (adjust if different)
-PY=/home/pwojcik/.conda/envs/pipnet/bin/python
 
 echo "Node: $(hostname)"
 nvidia-smi || true
-$PY -V
 
-# Run training
-$PY main.py \
+# Make conda available in non-interactive shell
+source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null || \
+source ~/miniforge3/etc/profile.d/conda.sh 2>/dev/null || true
+
+conda activate pipnet
+
+python -V
+which python
+
+python main.py \
   --dataset grayscale_mito \
   --epochs 16 \
   --epochs_pretrain 8 \
