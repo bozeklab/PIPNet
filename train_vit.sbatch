@@ -14,19 +14,17 @@ set -euo pipefail
 cd /home/pwojcik/UnGuide
 mkdir -p logs
 
+PY=/home/pwojcik/.conda/envs/sae/bin/python
+
 echo "Node: $(hostname)"
 nvidia-smi || true
 
-# Make conda available in non-interactive shell
-source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null || \
-source ~/miniforge3/etc/profile.d/conda.sh 2>/dev/null || true
+echo "PY path is: $PY"
+ls -l "$PY"
+"$PY" -V
+"$PY" -c "import sys; print('sys.executable:', sys.executable)"
 
-conda activate pipnet
-
-python -V
-which python
-
-python main.py \
+"$PY" main.py \
   --dataset grayscale_mito \
   --epochs 16 \
   --epochs_pretrain 8 \
