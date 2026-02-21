@@ -194,9 +194,6 @@ def run_pipnet(args=None):
         # Pretrain prototypes
         train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, optimizer_classifier, scheduler_net, None, criterion, epoch, args.epochs_pretrain, device, pretrain=True, finetune=False)
         lrs_pretrain_net+=train_info['lrs_net']
-        plt.clf()
-        plt.plot(lrs_pretrain_net)
-        plt.savefig(os.path.join(args.log_dir,'lr_pretrain_net.png'))
         log.log_values('log_epoch_overview', epoch, "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", train_info['loss'])
 
         wandb.log({

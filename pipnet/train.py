@@ -2,6 +2,7 @@ from tqdm import tqdm
 import torch
 import torch.nn.functional as F
 import torch.optim
+import wandb
 import torch.utils.data
 import math
 
@@ -53,6 +54,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     
     lrs_net = []
     lrs_class = []
+    global_step_offset = (epoch - 1) * len(train_loader)
+
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
         
@@ -64,9 +67,10 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
        
         # Perform a forward pass through the network
         proto_features, proto_features_ds, pooled, out = net(torch.cat([xs1, xs2]), torch.cat([xs1_ds, xs2_ds]))
-        loss, acc = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
+        loss, acc, loss_dict = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
-        
+        global_step = global_step_offset + i
+        wandb.log(loss_dict, step=global_step)
         # Compute the gradient
         loss.backward()
 
@@ -167,8 +171,21 @@ def calculate_loss(proto_features, proto_features_ds, pooled, hflip, hflip_ds, o
                     f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
                 else:
                     train_iter.set_postfix_str(
-                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)            
-    return loss, acc
+                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
+                    # ----- values to "plot" in wandb -----
+    # These are floats so wandb can chart them.
+    loss_dict = {
+        "loss/total": float(loss.detach().item()),
+        "loss/align_pf": float(a_loss_pf.detach().item()),
+        "loss/tanh": float(tanh_loss.detach().item()),
+        "loss/class": float(class_loss.detach().item()),
+        "train/acc_step": float(acc),
+        "weights/align_pf": float(align_pf_weight),
+        "weights/tanh": float(t_weight),
+        "weights/class": float(cl_weight),
+    }
+
+    return loss, acc, loss_dict
 
 # Extra uniform loss from https://www.tongzhouwang.info/hypersphere/. Currently not used but you could try adding it if you want. 
 def uniform_loss(x, t=2):

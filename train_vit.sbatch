@@ -30,9 +30,9 @@ ls -l "$PY"
   --epochs_pretrain 8 \
   --batch_size 16 \
   --freeze_epochs 10 \
-  --log_dir ./runs/paper_runs/mito_convnext_tiny_2img_hf03_cn_5 \
+  --log_dir ./runs/paper_runs/mito_convnext_tiny_2img_vit \
   --image_size 448 \
   --num_features 256 \
   --image_size_ds 224 \
-  --net convnext_tiny_13 \
+  --net dinov2_vitb14 \
   --gpu_ids 0
