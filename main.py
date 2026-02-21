@@ -14,6 +14,7 @@ import sys, os
 import random
 import numpy as np
 from shutil import copy
+import wandb
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
@@ -427,6 +428,17 @@ if __name__ == '__main__':
     np.random.seed(args.seed)
 
     os.makedirs(args.log_dir, exist_ok=True)
+
+    # ---- wandb init ----
+    run = wandb.init(
+        project=getattr(args, "wandb_project", "pipnet"),
+        entity=getattr(args, "wandb_entity", None),  # optional
+        name=getattr(args, "wandb_name", None),      # optional
+        config=vars(args),
+        dir=args.log_dir,  # keeps wandb files next to your logs
+    )
+    wandb.define_metric("epoch")
+    wandb.define_metric("*", step_metric="epoch")
 
     print_dir = os.path.join(args.log_dir, 'out.txt')
     tqdm_dir = os.path.join(args.log_dir, 'tqdm.txt')

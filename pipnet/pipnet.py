@@ -115,7 +115,7 @@ def get_network(num_classes: int, args: argparse.Namespace):
         pos_embed = torch.nn.Parameter(torch.zeros(1, 257, embed_sizes[modelname]))
         vit.pos_embed = pos_embed
 
-        #vit.load_state_dict(new_state_dict, strict=True)
+        vit.load_state_dict(new_state_dict, strict=True)
 
         for p in vit.parameters():
             p.requires_grad = False
