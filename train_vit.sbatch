@@ -3,7 +3,7 @@
 #SBATCH --output=logs/mito_convnext_%j.out
 #SBATCH --error=logs/mito_convnext_%j.err
 #SBATCH --partition=train
-#SBATCH --nodelist=lyn-gpu-[03-05]
+#SBATCH --nodelist=lyn-gpu-06
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
