@@ -14,7 +14,7 @@ set -euo pipefail
 cd /home/pwojcik/PIPNet
 mkdir -p logs
 
-PY=/home/pwojcik/.conda/envs/sae/bin/python
+PY=/home/pwojcik/.conda/envs/dinov2/bin/python
 
 echo "Node: $(hostname)"
 nvidia-smi || true
