@@ -185,8 +185,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         loss, acc, loss_dict = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         global_step = global_step_offset + i
-        loss_dict["epoch"] = epoch
-        wandb.log(loss_dict, step=global_step)
+        loss_dict["global_step"] = global_step
+        wandb.log(loss_dict)
         # Compute the gradient
         loss.backward()
 
@@ -321,6 +321,7 @@ def calculate_loss(proto_features, proto_features_ds, pooled, hflip, hflip_ds, o
         loss_dict[f"{stage}/acc_step"] = float(acc)
 
     return loss, acc, loss_dict
+
 
 # Extra uniform loss from https://www.tongzhouwang.info/hypersphere/. Currently not used but you could try adding it if you want. 
 def uniform_loss(x, t=2):
