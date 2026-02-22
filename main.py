@@ -440,8 +440,8 @@ if __name__ == '__main__':
         config=vars(args),
         dir=args.log_dir,  # keeps wandb files next to your logs
     )
-    wandb.define_metric("epoch")
-    wandb.define_metric("*", step_metric="epoch")
+    wandb.define_metric("global_step")
+    wandb.define_metric("*", step_metric="global_step")
 
     print_dir = os.path.join(args.log_dir, 'out.txt')
     tqdm_dir = os.path.join(args.log_dir, 'tqdm.txt')
