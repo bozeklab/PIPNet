@@ -175,10 +175,9 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             phase = "pretrain" if pretrain else ("finetune" if finetune else "train")
             wandb.log(
                 {
-                    "viz/phase": phase,
-                    "viz/original": examples_original,
-                    "viz/prototype_overlay": examples_overlay,
-                    "viz/prototype_legend": wandb.Image(legend_img, caption="Legend: proto id → color"),
+                    f"viz/original_{phase}": examples_original,
+                    f"viz/prototype_overlay_{phase}": examples_overlay,
+                    f"viz/prototype_legend_{phase}": wandb.Image(legend_img, caption="Legend: proto id → color"),
                 },
                 step=global_step,
             )
