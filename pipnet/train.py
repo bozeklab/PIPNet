@@ -40,7 +40,7 @@ def create_proto_legend(colors, proto_ids=None, max_items=25):
     return Image.open(buf)
 
 
-def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch'):
+def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, device, pretrain=False, finetune=False, global_step_base=0, progress_prefix: str = 'Train Epoch'):
 
     # Make sure the model is in train mode
     net.train()
@@ -171,7 +171,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
             legend_img = create_proto_legend(colors, proto_ids=used, max_items=25)
 
-            global_step = (epoch - 1) * len(train_loader) + i
+            global_step = global_step_base + (epoch - 1) * len(train_loader) + i
             phase = "pretrain" if pretrain else ("finetune" if finetune else "train")
             wandb.log(
                 {

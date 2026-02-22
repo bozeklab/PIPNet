@@ -190,9 +190,11 @@ def run_pipnet(args=None):
             param.requires_grad = False #can be set to True when you want to train whole backbone (e.g. if dataset is very different from ImageNet)
         
         print("\nPretrain Epoch", epoch, "with batch size", trainloader_pretraining.batch_size, flush=True)
-        
+
+        pretrain_base = 0
         # Pretrain prototypes
-        train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, optimizer_classifier, scheduler_net, None, criterion, epoch, args.epochs_pretrain, device, pretrain=True, finetune=False)
+        train_info = train_pipnet(net, trainloader_pretraining, optimizer_net, optimizer_classifier, scheduler_net,
+                                  None, criterion, epoch, args.epochs_pretrain, device, pretrain=True, global_step_base=pretrain_base, finetune=False)
         lrs_pretrain_net+=train_info['lrs_net']
         log.log_values('log_epoch_overview', epoch, "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", "n.a.", train_info['loss'])
 
@@ -277,7 +279,9 @@ def run_pipnet(args=None):
                     print("Classifier bias: ", net.module._classification.bias, flush=True)
                 torch.set_printoptions(profile="default")
 
-        train_info = train_pipnet(net, trainloader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, args.epochs, device, pretrain=False, finetune=finetune)
+        stage2_base = args.epochs_pretrain * len(trainloader_pretraining)
+        train_info = train_pipnet(net, trainloader, optimizer_net, optimizer_classifier, scheduler_net,
+                                  scheduler_classifier, criterion, epoch, args.epochs, device, pretrain=False,  global_step_base=stage2_base, finetune=finetune)
         lrs_net+=train_info['lrs_net']
         lrs_classifier+=train_info['lrs_class']
         # Evaluate model
