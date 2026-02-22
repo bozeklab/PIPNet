@@ -1,12 +1,43 @@
-from tqdm import tqdm
-import torch
-import torch.optim
-import wandb
+import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
-import torch.nn.functional as F
-import torch.utils.data
-import math
+import torch
+import wandb
+import io
+from PIL import Image
+
+
+def create_proto_legend(colors, proto_ids=None, max_items=25):
+    """
+    colors: torch.Tensor (P,3) on CPU or GPU in [0,1]
+    proto_ids: optional list of prototype indices to display
+    """
+    colors_cpu = colors.detach().cpu()
+    P = colors_cpu.shape[0]
+
+    if proto_ids is None:
+        proto_ids = list(range(P))
+    proto_ids = proto_ids[:max_items]
+
+    fig_h = max(1.5, 0.28 * len(proto_ids))
+    fig, ax = plt.subplots(figsize=(4.0, fig_h))
+
+    for row, pid in enumerate(proto_ids):
+        c = colors_cpu[pid].numpy()
+        ax.add_patch(plt.Rectangle((0, row), 1, 1, color=c))
+        ax.text(1.2, row + 0.5, f"Proto {pid}", va="center", fontsize=10)
+
+    ax.set_xlim(0, 3.0)
+    ax.set_ylim(0, len(proto_ids))
+    ax.invert_yaxis()
+    ax.axis("off")
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight", dpi=150)
+    plt.close(fig)
+    buf.seek(0)
+    return Image.open(buf)
+
 
 def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, scheduler_net, scheduler_classifier, criterion, epoch, nr_epochs, device, pretrain=False, finetune=False, progress_prefix: str = 'Train Epoch'):
 
@@ -74,76 +105,78 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             torch.cat([xs1_ds, xs2_ds])
         )
 
-        # ---- W&B: log example images + corresponding upsampled prototype map ----
         if wandb.run is not None and i % 200 == 0:
             bs = xs1.shape[0]
             max_images = min(2, bs)
 
-            pf_xs1 = proto_features[:bs]  # first half corresponds to xs1
-
+            pf_xs1 = proto_features[:bs]  # corresponds to xs1
             examples_original = []
             examples_overlay = []
+
+            # If you have many prototypes, hsv gives more unique colors than tab20
+            num_prototypes = pf_xs1.shape[1]  # proto_features shape assumed (B*2, P, H, W)
+            cmap = plt.get_cmap("hsv", num_prototypes)
+            colors = torch.tensor([cmap(k)[:3] for k in range(num_prototypes)], dtype=torch.float32)
 
             for j in range(max_images):
                 img = xs1[j].detach().cpu()
                 img = torch.clamp(img, 0, 1)
 
-                # --- get feature map ---
-                fmap = pf_xs1[j].detach().cpu()
+                fmap = pf_xs1[j].detach().cpu()  # (P, H, W) softmax probs
 
-                # convert to (h,w,d)
-                if fmap.shape[0] < 32:  # likely (d,h,w)
-                    fmap = fmap.permute(1, 2, 0)
+                # winner prototype per patch + confidence
+                proto_idx = torch.argmax(fmap, dim=0)  # (H, W)
+                proto_conf = torch.max(fmap, dim=0).values  # (H, W) in [0,1]
 
-                # argmax over prototype dimension
-                proto_idx = torch.argmax(fmap, dim=0)  # over P
-
-                # upsample to image size
+                # upsample both to image size
                 H_img, W_img = img.shape[-2], img.shape[-1]
                 proto_idx_up = F.interpolate(
-                    proto_idx[None, None].float(),
-                    size=(H_img, W_img),
-                    mode="nearest"
+                    proto_idx[None, None].float(), size=(H_img, W_img), mode="nearest"
                 )[0, 0].long()
 
-                mask_np = proto_idx_up.numpy()
+                proto_conf_up = F.interpolate(
+                    proto_conf[None, None], size=(H_img, W_img), mode="bilinear", align_corners=False
+                )[0, 0].clamp(0, 1)
 
-                # --- convert mask to color map ---
-                proto_norm = mask_np.astype(np.float32)
-                if proto_norm.max() > 0:
-                    proto_norm /= proto_norm.max()
+                # colorize (H,W,3) -> (3,H,W)
+                colored = colors[proto_idx_up]  # (H, W, 3)
+                colored = colored.permute(2, 0, 1).float()  # (3, H, W)
 
-                colored = plt.cm.tab20(proto_norm)[..., :3]  # RGB
-                colored = torch.tensor(colored).permute(2, 0, 1).float()
+                # confidence-weighted alpha (cleaner than constant alpha)
+                # You can tune these:
+                base_alpha = 0.15
+                conf_alpha = 0.75
+                alpha_map = (base_alpha + conf_alpha * proto_conf_up).clamp(0, 1)  # (H,W)
+                alpha_map = alpha_map.unsqueeze(0)  # (1,H,W) for broadcasting
 
-                # --- blend overlay ---
-                alpha = 0.5
-                overlay = alpha * colored + (1 - alpha) * img
+                overlay = alpha_map * colored + (1 - alpha_map) * img
                 overlay = torch.clamp(overlay, 0, 1)
 
-                # --- log images ---
+                # log
                 examples_original.append(
-                    wandb.Image(
-                        img,
-                        caption=f"class: {ys[j].item()}"
-                    )
+                    wandb.Image(img, caption=f"class: {ys[j].item()}")
+                )
+                examples_overlay.append(
+                    wandb.Image(overlay, caption=f"class: {ys[j].item()} (proto overlay)")
                 )
 
-                examples_overlay.append(
-                    wandb.Image(
-                        overlay,
-                        caption=f"class: {ys[j].item()} (proto overlay)"
-                    )
-                )
+            # (optional) show legend only for prototypes used in these images
+            used = set()
+            for j in range(max_images):
+                fmap = pf_xs1[j].detach().cpu()
+                used |= set(torch.unique(torch.argmax(fmap, dim=0)).tolist())
+            used = sorted(list(used))
+
+            legend_img = create_proto_legend(colors, proto_ids=used, max_items=25)
 
             global_step = (epoch - 1) * len(train_loader) + i
-
             wandb.log(
                 {
                     "train/original": examples_original,
                     "train/prototype_overlay": examples_overlay,
+                    "train/prototype_legend": wandb.Image(legend_img, caption="Legend: proto id → color"),
                 },
-                step=global_step
+                step=global_step,
             )
         loss, acc, loss_dict = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
