@@ -106,7 +106,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             torch.cat([xs1_ds, xs2_ds])
         )
 
-        if wandb.run is not None and i % 50 == 0:
+        log_every = 10
+        if wandb.run is not None and (i % log_every == 0 or i == 0):
             bs = xs1.shape[0]
             max_images = min(2, bs)
 
@@ -174,18 +175,18 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             phase = "pretrain" if pretrain else ("finetune" if finetune else "train")
             wandb.log(
                 {
-                    f"{phase}/original": examples_original,
-                    f"{phase}/prototype_overlay": examples_overlay,
-                    f"{phase}/prototype_legend": wandb.Image(legend_img, caption="Legend: proto id → color"),
+                    "viz/phase": phase,
+                    "viz/original": examples_original,
+                    "viz/prototype_overlay": examples_overlay,
+                    "viz/prototype_legend": wandb.Image(legend_img, caption="Legend: proto id → color"),
                 },
                 step=global_step,
             )
         loss, acc, loss_dict = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         global_step = global_step_offset + i
-        loss_dict["global_step"] = global_step
-        loss_dict["epoch"] = epoch  # optional, handy for grouping
-        wandb.log(loss_dict)
+        loss_dict["epoch"] = epoch
+        wandb.log(loss_dict, step=global_step)
         # Compute the gradient
         loss.backward()
 
