@@ -106,7 +106,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             torch.cat([xs1_ds, xs2_ds])
         )
 
-        if wandb.run is not None and i % 200 == 0:
+        if wandb.run is not None and i % 50 == 0:
             bs = xs1.shape[0]
             max_images = min(2, bs)
 
@@ -171,11 +171,12 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             legend_img = create_proto_legend(colors, proto_ids=used, max_items=25)
 
             global_step = (epoch - 1) * len(train_loader) + i
+            phase = "pretrain" if pretrain else ("finetune" if finetune else "train")
             wandb.log(
                 {
-                    "train/original": examples_original,
-                    "train/prototype_overlay": examples_overlay,
-                    "train/prototype_legend": wandb.Image(legend_img, caption="Legend: proto id → color"),
+                    f"{phase}/original": examples_original,
+                    f"{phase}/prototype_overlay": examples_overlay,
+                    f"{phase}/prototype_legend": wandb.Image(legend_img, caption="Legend: proto id → color"),
                 },
                 step=global_step,
             )
