@@ -126,8 +126,21 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
                 # ---- boolean mask for this image (view1) ----
                 # m1[j] could be (H,W) or (1,H,W) or (3,H,W); normalize it to (H,W) float in {0,1}
-                print('!!! ', m1.shape)
                 mask = m1[j].detach().cpu()
+                if mask.dim() == 3:
+                    mask = mask[0]  # (C,H,W) -> (H,W)
+
+                # flip first (in mask's native resolution)
+                if bool(hflip1[j]):
+                    mask = torch.flip(mask, dims=[1])
+
+                mask = (mask.float() > 0.5).float()
+
+                # resize to image size if needed
+                H_img, W_img = img.shape[-2], img.shape[-1]
+                if mask.shape[-2:] != (H_img, W_img):
+                    mask = F.interpolate(mask[None, None], size=(H_img, W_img), mode="nearest")[0, 0]
+
                 if mask.dim() == 3:
                     # (C,H,W) -> (H,W)
                     mask = mask[0]
