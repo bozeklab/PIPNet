@@ -62,35 +62,82 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
         # Log example images occasionally
-        if wandb.run is not None and i % 200 == 0:  # log every 200 steps
-            max_images = min(2, xs1.shape[0])  # log up to 4 images
+        # Reset the gradients
+        optimizer_classifier.zero_grad(set_to_none=True)
+        optimizer_net.zero_grad(set_to_none=True)
 
-            images_to_log = []
+        # Forward pass
+        proto_features, proto_features_ds, pooled, out = net(
+            torch.cat([xs1, xs2]),
+            torch.cat([xs1_ds, xs2_ds])
+        )
+
+        # ---- W&B: log example images + corresponding upsampled prototype map ----
+        if wandb.run is not None and i % 200 == 0:
+            bs = xs1.shape[0]
+            max_images = min(2, bs)
+
+            # proto_features includes xs1 then xs2 because input was cat([xs1, xs2])
+            # So the first half corresponds to xs1
+            pf_xs1 = proto_features[:bs]  # per-image feature maps for xs1
+
+            examples = []
             for j in range(max_images):
                 img = xs1[j].detach().cpu()
                 img = torch.clamp(img, 0, 1)
 
-                images_to_log.append(
+                # Get feature map for this image
+                fmap = pf_xs1[j].detach().cpu()
+
+                # Handle either (h,w,d) or (d,h,w)
+                if fmap.dim() != 3:
+                    raise ValueError(f"Expected feature map with 3 dims, got shape {tuple(fmap.shape)}")
+
+                # Convert to (h,w,d)
+                # If it's (d,h,w), permute to (h,w,d)
+                if fmap.shape[0] != fmap.shape[1] and fmap.shape[0] != fmap.shape[2] and fmap.shape[0] > 8:
+                    # likely (d,h,w)
+                    fmap_hwd = fmap.permute(1, 2, 0)
+                else:
+                    # likely already (h,w,d)
+                    fmap_hwd = fmap
+
+                # Argmax over prototypes (last dim)
+                proto_idx = torch.argmax(fmap_hwd, dim=-1)  # (h,w), int64
+
+                # Upsample to image size (nearest so indices stay integers)
+                H_img, W_img = img.shape[-2], img.shape[-1]
+                proto_idx_up = F.interpolate(
+                    proto_idx[None, None].float(),  # (1,1,h,w)
+                    size=(H_img, W_img),
+                    mode="nearest"
+                )[0, 0].to(torch.int64)  # (H,W)
+
+                mask_np = proto_idx_up.numpy()
+
+                # Log as an overlay mask on the image
+                examples.append(
                     wandb.Image(
                         img,
-                        caption=f"class: {ys[j].item()}"
+                        caption=f"class: {ys[j].item()}",
+                        masks={
+                            "prototype_argmax": {
+                                "mask_data": mask_np
+                                # Optional: class_labels mapping if you want labels for indices
+                                # "class_labels": {0: "p0", 1: "p1", ...}
+                            }
+                        }
                     )
                 )
 
             global_step = (epoch - 1) * len(train_loader) + i
             wandb.log(
                 {
-                    "train/examples": images_to_log,
+                    "train/examples_with_proto_map": examples,
                     "global_step": global_step,
-                }
+                },
+                step=global_step
             )
-
-        # Reset the gradients
-        optimizer_classifier.zero_grad(set_to_none=True)
-        optimizer_net.zero_grad(set_to_none=True)
-       
-        # Perform a forward pass through the network
-        proto_features, proto_features_ds, pooled, out = net(torch.cat([xs1, xs2]), torch.cat([xs1_ds, xs2_ds]))
         loss, acc, loss_dict = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
                                    net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
         global_step = global_step_offset + i
