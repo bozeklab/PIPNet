@@ -91,7 +91,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     global_step_offset = (epoch - 1) * len(train_loader)
 
     # Iterate through the data set to update leaves, prototypes and network
-    for i, (xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
+    for i, (xs1, xs2, m, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
         
         xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
@@ -124,14 +124,29 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 img = xs1[j].detach().cpu()
                 img = torch.clamp(img, 0, 1)
 
-                fmap = pf_xs1[j].detach().cpu()  # (P, H, W) softmax probs
+                # ---- boolean mask for this image (view1) ----
+                # m1[j] could be (H,W) or (1,H,W) or (3,H,W); normalize it to (H,W) float in {0,1}
+                mask = m[j].detach().cpu()
+                if mask.dim() == 3:
+                    # (C,H,W) -> (H,W)
+                    mask = mask[0]
+                mask = mask.float()
+                mask = (mask > 0.5).float()  # ensure binary 0/1
 
-                # winner prototype per patch + confidence
-                proto_idx = torch.argmax(fmap, dim=0)  # (H, W)
-                proto_conf = torch.max(fmap, dim=0).values  # (H, W) in [0,1]
-
-                # upsample both to image size
+                # If mask resolution differs from img, resize it
                 H_img, W_img = img.shape[-2], img.shape[-1]
+                if mask.shape[-2:] != (H_img, W_img):
+                    mask = F.interpolate(mask[None, None], size=(H_img, W_img), mode="nearest")[0, 0]
+
+                # ---- dim image outside mask ----
+                dim_factor = 0.25  # 0 = black background, 1 = no dimming
+                img_dimmed = img * (mask.unsqueeze(0) + (1 - mask).unsqueeze(0) * dim_factor)
+
+                fmap = pf_xs1[j].detach().cpu()  # (P, H, W)
+
+                proto_idx = torch.argmax(fmap, dim=0)  # (H, W)
+                proto_conf = torch.max(fmap, dim=0).values  # (H, W)
+
                 proto_idx_up = F.interpolate(
                     proto_idx[None, None].float(), size=(H_img, W_img), mode="nearest"
                 )[0, 0].long()
@@ -140,20 +155,19 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                     proto_conf[None, None], size=(H_img, W_img), mode="bilinear", align_corners=False
                 )[0, 0].clamp(0, 1)
 
-                # colorize (H,W,3) -> (3,H,W)
-                colored = colors[proto_idx_up]  # (H, W, 3)
-                colored = colored.permute(2, 0, 1).float()  # (3, H, W)
+                colored = colors[proto_idx_up].permute(2, 0, 1).float()  # (3,H,W)
 
-                # confidence-weighted alpha (cleaner than constant alpha)
-                # You can tune these:
+                # confidence-weighted alpha
                 base_alpha = 0.15
                 conf_alpha = 0.75
                 alpha_map = (base_alpha + conf_alpha * proto_conf_up).clamp(0, 1)  # (H,W)
-                alpha_map = alpha_map.unsqueeze(0)  # (1,H,W) for broadcasting
 
-                overlay = alpha_map * colored + (1 - alpha_map) * img
+                # ---- also suppress overlay outside mask (recommended) ----
+                # this prevents painting prototypes on background
+                alpha_map = alpha_map * mask
+
+                overlay = alpha_map.unsqueeze(0) * colored + (1 - alpha_map).unsqueeze(0) * img_dimmed
                 overlay = torch.clamp(overlay, 0, 1)
-
                 # log
                 examples_original.append(
                     wandb.Image(img, caption=f"class: {ys[j].item()}")
