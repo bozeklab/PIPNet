@@ -96,7 +96,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                     fmap = fmap.permute(1, 2, 0)
 
                 # argmax over prototype dimension
-                proto_idx = torch.argmax(fmap, dim=-1)
+                proto_idx = torch.argmax(fmap, dim=0)  # over P
 
                 # upsample to image size
                 H_img, W_img = img.shape[-2], img.shape[-1]
