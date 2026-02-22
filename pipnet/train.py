@@ -114,6 +114,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             pf_xs1 = proto_features[:bs]  # corresponds to xs1
             examples_original = []
             examples_overlay = []
+            examples_mask = []
 
             # If you have many prototypes, hsv gives more unique colors than tab20
             num_prototypes = pf_xs1.shape[1]  # proto_features shape assumed (B*2, P, H, W)
@@ -135,6 +136,11 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                     mask = torch.flip(mask, dims=[1])
 
                 mask = (mask.float() > 0.5).float()
+
+                mask_vis = mask.unsqueeze(0)  # (1, H, W)
+                examples_mask.append(
+                    wandb.Image(mask_vis, caption=f"class: {ys[j].item()} (GT mask)")
+                )
 
                 # resize to image size if needed
                 H_img, W_img = img.shape[-2], img.shape[-1]
@@ -204,6 +210,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             wandb.log(
                 {
                     f"viz/original_{phase}": examples_original,
+                    f"viz/prototype_mask": examples_mask,
                     f"viz/prototype_overlay_{phase}": examples_overlay,
                     f"viz/prototype_legend_{phase}": wandb.Image(legend_img, caption="Legend: proto id → color"),
                 },
