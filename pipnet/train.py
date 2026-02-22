@@ -91,7 +91,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     global_step_offset = (epoch - 1) * len(train_loader)
 
     # Iterate through the data set to update leaves, prototypes and network
-    for i, (xs1, xs2, m, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
+    for i, (xs1, xs2, m1, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
         
         xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
@@ -126,7 +126,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
                 # ---- boolean mask for this image (view1) ----
                 # m1[j] could be (H,W) or (1,H,W) or (3,H,W); normalize it to (H,W) float in {0,1}
-                mask = m[j].detach().cpu()
+                print('!!! ', m1.shape)
+                mask = m1[j].detach().cpu()
                 if mask.dim() == 3:
                     # (C,H,W) -> (H,W)
                     mask = mask[0]
