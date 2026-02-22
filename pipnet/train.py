@@ -1,8 +1,10 @@
 from tqdm import tqdm
 import torch
-import torch.nn.functional as F
 import torch.optim
 import wandb
+import matplotlib.pyplot as plt
+import numpy as np
+import torch.nn.functional as F
 import torch.utils.data
 import math
 
