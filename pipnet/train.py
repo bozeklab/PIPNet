@@ -114,6 +114,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             pf_xs1 = proto_features[:bs]  # corresponds to xs1
             examples_original = []
             examples_overlay = []
+            examples_mask_overlay = []
             examples_mask = []
 
             # If you have many prototypes, hsv gives more unique colors than tab20
@@ -135,11 +136,36 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 if bool(hflip1[j]):
                     mask = torch.flip(mask, dims=[1])
 
-                mask = (mask.float() > 0.5).float()
+                mask = (mask.float() > 0.2).float()
 
                 mask_vis = mask.unsqueeze(0)  # (1, H, W)
-                examples_mask.append(
-                    wandb.Image(mask_vis, caption=f"class: {ys[j].item()} (GT mask)")
+
+                # Ensure mask matches image size
+                H_img, W_img = img.shape[-2], img.shape[-1]
+                if mask.shape[-2:] != (H_img, W_img):
+                    mask = F.interpolate(mask[None, None], size=(H_img, W_img), mode="nearest")[0, 0]
+
+                # --- make a nice visualization ---
+                mask3 = mask.unsqueeze(0).repeat(3, 1, 1)  # (3,H,W)
+
+                # Dim outside mask
+                dim_factor = 0.25
+                img_dimmed = img * (mask3 + (1 - mask3) * dim_factor)
+
+                # Add a tinted overlay INSIDE the mask (choose a constant color)
+                # (no need for matplotlib; this is fast)
+                tint = torch.zeros_like(img)
+                tint[0] = 1.0  # red channel = 1, so mask region is red-tinted
+
+                alpha = 0.35  # overlay opacity on masked region
+                mask_overlay = img_dimmed * (1 - alpha * mask3) + tint * (alpha * mask3)
+                mask_overlay = torch.clamp(mask_overlay, 0, 1)
+
+                examples_mask_overlay.append(
+                    wandb.Image(
+                        mask_overlay,
+                        caption=f"class: {ys[j].item()} (GT mask overlay)"
+                    )
                 )
 
                 # resize to image size if needed
@@ -212,6 +238,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                     f"viz/original_{phase}": examples_original,
                     f"viz/prototype_mask": examples_mask,
                     f"viz/prototype_overlay_{phase}": examples_overlay,
+                    f"viz/mask_overlay_{phase}": examples_mask_overlay,
                     f"viz/prototype_legend_{phase}": wandb.Image(legend_img, caption="Legend: proto id → color"),
                 },
                 step=global_step,
