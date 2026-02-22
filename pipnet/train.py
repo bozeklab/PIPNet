@@ -77,64 +77,69 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             bs = xs1.shape[0]
             max_images = min(2, bs)
 
-            # proto_features includes xs1 then xs2 because input was cat([xs1, xs2])
-            # So the first half corresponds to xs1
-            pf_xs1 = proto_features[:bs]  # per-image feature maps for xs1
+            pf_xs1 = proto_features[:bs]  # first half corresponds to xs1
 
-            examples = []
+            examples_original = []
+            examples_overlay = []
+
             for j in range(max_images):
                 img = xs1[j].detach().cpu()
                 img = torch.clamp(img, 0, 1)
 
-                # Get feature map for this image
+                # --- get feature map ---
                 fmap = pf_xs1[j].detach().cpu()
 
-                # Handle either (h,w,d) or (d,h,w)
-                if fmap.dim() != 3:
-                    raise ValueError(f"Expected feature map with 3 dims, got shape {tuple(fmap.shape)}")
+                # convert to (h,w,d)
+                if fmap.shape[0] < 32:  # likely (d,h,w)
+                    fmap = fmap.permute(1, 2, 0)
 
-                # Convert to (h,w,d)
-                # If it's (d,h,w), permute to (h,w,d)
-                if fmap.shape[0] != fmap.shape[1] and fmap.shape[0] != fmap.shape[2] and fmap.shape[0] > 8:
-                    # likely (d,h,w)
-                    fmap_hwd = fmap.permute(1, 2, 0)
-                else:
-                    # likely already (h,w,d)
-                    fmap_hwd = fmap
+                # argmax over prototype dimension
+                proto_idx = torch.argmax(fmap, dim=-1)
 
-                # Argmax over prototypes (last dim)
-                proto_idx = torch.argmax(fmap_hwd, dim=-1)  # (h,w), int64
-
-                # Upsample to image size (nearest so indices stay integers)
+                # upsample to image size
                 H_img, W_img = img.shape[-2], img.shape[-1]
                 proto_idx_up = F.interpolate(
-                    proto_idx[None, None].float(),  # (1,1,h,w)
+                    proto_idx[None, None].float(),
                     size=(H_img, W_img),
                     mode="nearest"
-                )[0, 0].to(torch.int64)  # (H,W)
+                )[0, 0].long()
 
                 mask_np = proto_idx_up.numpy()
 
-                # Log as an overlay mask on the image
-                examples.append(
+                # --- convert mask to color map ---
+                proto_norm = mask_np.astype(np.float32)
+                if proto_norm.max() > 0:
+                    proto_norm /= proto_norm.max()
+
+                colored = plt.cm.tab20(proto_norm)[..., :3]  # RGB
+                colored = torch.tensor(colored).permute(2, 0, 1).float()
+
+                # --- blend overlay ---
+                alpha = 0.5
+                overlay = alpha * colored + (1 - alpha) * img
+                overlay = torch.clamp(overlay, 0, 1)
+
+                # --- log images ---
+                examples_original.append(
                     wandb.Image(
                         img,
-                        caption=f"class: {ys[j].item()}",
-                        masks={
-                            "prototype_argmax": {
-                                "mask_data": mask_np
-                                # Optional: class_labels mapping if you want labels for indices
-                                # "class_labels": {0: "p0", 1: "p1", ...}
-                            }
-                        }
+                        caption=f"class: {ys[j].item()}"
+                    )
+                )
+
+                examples_overlay.append(
+                    wandb.Image(
+                        overlay,
+                        caption=f"class: {ys[j].item()} (proto overlay)"
                     )
                 )
 
             global_step = (epoch - 1) * len(train_loader) + i
+
             wandb.log(
                 {
-                    "train/examples_with_proto_map": examples,
-                    "global_step": global_step,
+                    "train/original": examples_original,
+                    "train/prototype_overlay": examples_overlay,
                 },
                 step=global_step
             )
