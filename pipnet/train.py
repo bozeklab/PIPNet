@@ -133,59 +133,78 @@ def calculate_loss(proto_features, proto_features_ds, pooled, hflip, hflip_ds, o
 
     embv2_ds = pf2_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
     embv1_ds = pf1_ds.flatten(start_dim=2).permute(0,2,1).flatten(end_dim=1)
-    
-    a_loss_pf = (align_loss(embv1, embv2.detach())+ align_loss(embv2, embv1.detach()))/2.
+
+    # ---- compute losses ----
+    a_loss_pf = (align_loss(embv1, embv2.detach()) + align_loss(embv2, embv1.detach())) / 2.
     a_loss_pf += (align_loss(embv1_ds, embv2_ds.detach()) + align_loss(embv2_ds, embv1_ds.detach())) / 2.
-    tanh_loss = -(torch.log(torch.tanh(torch.sum(pooled1,dim=0))+EPS).mean() + torch.log(torch.tanh(torch.sum(pooled2,dim=0))+EPS).mean())/2.
 
-    if not finetune:
-        loss = align_pf_weight*a_loss_pf
-        loss += t_weight * tanh_loss
-    
-    if not pretrain:
-        softmax_inputs = torch.log1p(out**net_normalization_multiplier)
-        class_loss = criterion(F.log_softmax((softmax_inputs),dim=1),ys)
-        
+    tanh_loss = -(
+            torch.log(torch.tanh(torch.sum(pooled1, dim=0)) + EPS).mean()
+            + torch.log(torch.tanh(torch.sum(pooled2, dim=0)) + EPS).mean()
+    ) / 2.
+
+    class_loss = None  # <-- important
+
+    # pretrain stage: only self-supervised losses
+    if pretrain:
+        loss = align_pf_weight * a_loss_pf + t_weight * tanh_loss
+
+    # classification stage (optionally with/without finetune)
+    else:
+        softmax_inputs = torch.log1p(out ** net_normalization_multiplier)
+        class_loss = criterion(F.log_softmax(softmax_inputs, dim=1), ys)
+
         if finetune:
-            loss= cl_weight * class_loss
+            loss = cl_weight * class_loss
         else:
-            loss+= cl_weight * class_loss
-    # Our tanh-loss optimizes for uniformity and was sufficient for our experiments. However, if pretraining of the prototypes is not working well for your dataset, you may try to add another uniformity loss from https://www.tongzhouwang.info/hypersphere/ Just uncomment the following three lines
-    # else:
-    #     uni_loss = (uniform_loss(F.normalize(pooled1+EPS,dim=1)) + uniform_loss(F.normalize(pooled2+EPS,dim=1)))/2.
-    #     loss += unif_weight * uni_loss
+            loss = align_pf_weight * a_loss_pf + t_weight * tanh_loss + cl_weight * class_loss
 
-    acc=0.
+    # ---- accuracy only when not pretrain ----
+    acc = 0.0
     if not pretrain:
         ys_pred_max = torch.argmax(out, dim=1)
         correct = torch.sum(torch.eq(ys_pred_max, ys))
         acc = correct.item() / float(len(ys))
-    if print: 
+
+    # ---- tqdm printing ----
+    if print:
         with torch.no_grad():
             if pretrain:
                 train_iter.set_postfix_str(
-                f'L: {loss.item():.3f}, LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}',refresh=False)
+                    f"stage:pre L:{loss.item():.3f}, LA:{a_loss_pf.item():.2f}, "
+                    f"LT:{tanh_loss.item():.3f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled - 0.1), dim=1).float().mean().item():.1f}",
+                    refresh=False
+                )
             else:
-                if finetune:
-                    train_iter.set_postfix_str(
-                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
-                else:
-                    train_iter.set_postfix_str(
-                    f'L:{loss.item():.3f},LC:{class_loss.item():.3f}, LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, num_scores>0.1:{torch.count_nonzero(torch.relu(pooled-0.1),dim=1).float().mean().item():.1f}, Ac:{acc:.3f}',refresh=False)
-                    # ----- values to "plot" in wandb -----
-    # These are floats so wandb can chart them.
-    loss_dict = {
-        "loss/total": float(loss.detach().item()),
-        "loss/align_pf": float(a_loss_pf.detach().item()),
-        "loss/tanh": float(tanh_loss.detach().item()),
-        "loss/class": float(class_loss.detach().item()),
-        "train/acc_step": float(acc),
-        "weights/align_pf": float(align_pf_weight),
-        "weights/tanh": float(t_weight),
-        "weights/class": float(cl_weight),
-    }
+                # finetune or joint, both have class_loss here
+                train_iter.set_postfix_str(
+                    f"stage:{'finetune' if finetune else 'joint'} "
+                    f"L:{loss.item():.3f}, LC:{class_loss.item():.3f}, "
+                    f"LA:{a_loss_pf.item():.2f}, LT:{tanh_loss.item():.3f}, "
+                    f"num_scores>0.1:{torch.count_nonzero(torch.relu(pooled - 0.1), dim=1).float().mean().item():.1f}, "
+                    f"Ac:{acc:.3f}",
+                    refresh=False
+                )
 
-    return loss, acc, loss_dict
+        # ---- wandb dict: log according to stage ----
+        stage = "pretrain" if pretrain else ("finetune" if finetune else "joint")
+
+        loss_dict = {
+            "stage": stage,  # helps filtering in wandb
+            f"{stage}/loss_total": float(loss.detach().item()),
+            f"{stage}/loss_align_pf": float(a_loss_pf.detach().item()),
+            f"{stage}/loss_tanh": float(tanh_loss.detach().item()),
+            "weights/align_pf": float(align_pf_weight),
+            "weights/tanh": float(t_weight),
+            "weights/class": float(cl_weight),
+        }
+
+        # only log class loss + acc when they exist (not pretrain)
+        if class_loss is not None:
+            loss_dict[f"{stage}/loss_class"] = float(class_loss.detach().item())
+            loss_dict[f"{stage}/acc_step"] = float(acc)
+
+        return loss, acc, loss_dict
 
 # Extra uniform loss from https://www.tongzhouwang.info/hypersphere/. Currently not used but you could try adding it if you want. 
 def uniform_loss(x, t=2):
