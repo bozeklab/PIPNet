@@ -61,6 +61,30 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         
         xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
+        # Log example images occasionally
+        if wandb.run is not None and i % 200 == 0:  # log every 200 steps
+            max_images = min(2, xs1.shape[0])  # log up to 4 images
+
+            images_to_log = []
+            for j in range(max_images):
+                img = xs1[j].detach().cpu()
+                img = torch.clamp(img, 0, 1)
+
+                images_to_log.append(
+                    wandb.Image(
+                        img,
+                        caption=f"class: {ys[j].item()}"
+                    )
+                )
+
+            global_step = (epoch - 1) * len(train_loader) + i
+            wandb.log(
+                {
+                    "train/examples": images_to_log,
+                    "global_step": global_step,
+                }
+            )
+
         # Reset the gradients
         optimizer_classifier.zero_grad(set_to_none=True)
         optimizer_net.zero_grad(set_to_none=True)
