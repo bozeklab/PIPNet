@@ -302,25 +302,25 @@ def calculate_loss(proto_features, proto_features_ds, pooled, hflip, hflip_ds, o
                     refresh=False
                 )
 
-        # ---- wandb dict: log according to stage ----
-        stage = "pretrain" if pretrain else ("finetune" if finetune else "joint")
+    # ---- wandb dict: log according to stage ----
+    stage = "pretrain" if pretrain else ("finetune" if finetune else "joint")
 
-        loss_dict = {
-            "stage": stage,  # helps filtering in wandb
-            f"{stage}/loss_total": float(loss.detach().item()),
-            f"{stage}/loss_align_pf": float((align_pf_weight * a_loss_pf).detach().item()),
-            f"{stage}/loss_tanh": float((t_weight * tanh_loss).detach().item()),
-            "weights/align_pf": float(align_pf_weight),
-            "weights/tanh": float(t_weight),
-            "weights/class": float(cl_weight),
-        }
+    loss_dict = {
+        "stage": stage,  # helps filtering in wandb
+        f"{stage}/loss_total": float(loss.detach().item()),
+        f"{stage}/loss_align_pf": float((align_pf_weight * a_loss_pf).detach().item()),
+        f"{stage}/loss_tanh": float((t_weight * tanh_loss).detach().item()),
+        "weights/align_pf": float(align_pf_weight),
+        "weights/tanh": float(t_weight),
+        "weights/class": float(cl_weight),
+    }
 
-        # only log class loss + acc when they exist (not pretrain)
-        if class_loss is not None:
-            loss_dict[f"{stage}/loss_class"] = float((cl_weight * class_loss).detach().item())
-            loss_dict[f"{stage}/acc_step"] = float(acc)
+    # only log class loss + acc when they exist (not pretrain)
+    if class_loss is not None:
+        loss_dict[f"{stage}/loss_class"] = float((cl_weight * class_loss).detach().item())
+        loss_dict[f"{stage}/acc_step"] = float(acc)
 
-        return loss, acc, loss_dict
+    return loss, acc, loss_dict
 
 # Extra uniform loss from https://www.tongzhouwang.info/hypersphere/. Currently not used but you could try adding it if you want. 
 def uniform_loss(x, t=2):
