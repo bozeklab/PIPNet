@@ -559,46 +559,55 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         image_path, target = self.imgs[index]
-        image = Image.open(image_path).convert('RGB')
-        mask_image_path = os.path.join(os.path.dirname(image_path), 'mask_' + os.path.basename(image_path))
-        mask = Image.open(mask_image_path).convert('RGB')
+        image = Image.open(image_path).convert("RGB")
 
-        mask_array = np.array(mask)
-        mask_array[mask_array != 0] = 255
-        mask = Image.fromarray(mask_array)
+        mask_path = os.path.join(os.path.dirname(image_path), "mask_" + os.path.basename(image_path))
+        mask = Image.open(mask_path).convert("RGB")
 
-        image_ = image.copy()
-        mask_ = mask.copy()
-        st1 = torch.get_rng_state()
-        image = self.transform1(image)
-        im1 = self.transform2(image)
-        im2 = self.transform2(image)
+        # binarize mask
+        mask_np = np.array(mask)
+        mask_np = (mask_np != 0).astype(np.uint8) * 255
+        mask = Image.fromarray(mask_np)
+
+        # ---------- full-res branch ----------
+        # view1
+        st = torch.get_rng_state()
+        im1 = self.transform2(self.transform1(image.copy()))
+        torch.set_rng_state(st)
+        m1 = self.transform2(self.transform1(mask.copy()))
+
+        # view2
+        st = torch.get_rng_state()
+        im2 = self.transform2(self.transform1(image.copy()))
+        torch.set_rng_state(st)
+        m2 = self.transform2(self.transform1(mask.copy()))
+
+        # flip view2 + mask view2 together
         im2, hflip1 = self.flip(im2)
-
-        torch.set_rng_state(st1)
-        mask = self.transform1(mask)
-        m1 = self.transform2(mask)
-        m2 = self.transform2(mask)
         m2, _ = self.flip(m2)
 
-        st2 = torch.get_rng_state()
-        image_ds = self.transform3(image_)
-        im1_ds = self.transform4(image_ds)
-        im2_ds = self.transform4(image_ds)
-        im2_ds, hflip2 = self.flip(im2_ds)
+        # ---------- downsample branch ----------
+        # view1_ds
+        st = torch.get_rng_state()
+        im1_ds = self.transform4(self.transform3(image.copy()))
+        torch.set_rng_state(st)
+        m1_ds = self.transform4(self.transform3(mask.copy()))
 
-        torch.set_rng_state(st2)
-        mask_ds = self.transform3(mask_)
-        m1_ds = self.transform4(mask_ds)
-        m2_ds = self.transform4(mask_ds)
+        # view2_ds
+        st = torch.get_rng_state()
+        im2_ds = self.transform4(self.transform3(image.copy()))
+        torch.set_rng_state(st)
+        m2_ds = self.transform4(self.transform3(mask.copy()))
+
+        im2_ds, hflip2 = self.flip(im2_ds)
         m2_ds, _ = self.flip(m2_ds)
 
-        masks = []
-        for mask in [m2, m2_ds]:
-            bool_mask = create_boolean_mask(mask)
-            masks.append(bool_mask)
+        # boolean masks (choose which ones you want to return)
+        bm2 = create_boolean_mask(m2)
+        bm2_ds = create_boolean_mask(m2_ds)
 
-        return im1, im2, masks[0], im1_ds, im2_ds, masks[1], hflip1, hflip2, target
+        return im1, im2, bm2, im1_ds, im2_ds, bm2_ds, hflip1, hflip2, target
+
 
     def __len__(self):
         return len(self.imgs)

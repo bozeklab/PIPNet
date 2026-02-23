@@ -133,12 +133,10 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                     mask = mask[0]  # (C,H,W) -> (H,W)
 
                 # flip first (in mask's native resolution)
-                if bool(hflip1[j]):
-                    mask = torch.flip(mask, dims=[1])
+                #if bool(hflip1[j]):
+                #    mask = torch.flip(mask, dims=[1])
 
                 mask = (mask.float() > 0.2).float()
-
-                mask_vis = mask.unsqueeze(0)  # (1, H, W)
 
                 # Ensure mask matches image size
                 H_img, W_img = img.shape[-2], img.shape[-1]
@@ -236,7 +234,6 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             wandb.log(
                 {
                     f"viz/original_{phase}": examples_original,
-                    f"viz/prototype_mask": examples_mask,
                     f"viz/prototype_overlay_{phase}": examples_overlay,
                     f"viz/mask_overlay_{phase}": examples_mask_overlay,
                     f"viz/prototype_legend_{phase}": wandb.Image(legend_img, caption="Legend: proto id → color"),
