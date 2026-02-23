@@ -91,7 +91,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
     global_step_offset = (epoch - 1) * len(train_loader)
 
     # Iterate through the data set to update leaves, prototypes and network
-    for i, (xs1, xs2, m1, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
+    for i, (xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
         
         xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
@@ -111,30 +111,30 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             bs = xs1.shape[0]
             max_images = min(2, bs)
 
-            pf_xs1 = proto_features[:bs]  # corresponds to xs1
+            # proto_features assumed shape: (2*B, P, h, w) corresponding to cat([xs1, xs2])
+            pf_xs2 = proto_features[bs:]  # corresponds to xs2 (view 2)
+
             examples_original = []
             examples_overlay = []
             examples_mask_overlay = []
-            examples_mask = []
 
-            # If you have many prototypes, hsv gives more unique colors than tab20
-            num_prototypes = pf_xs1.shape[1]  # proto_features shape assumed (B*2, P, H, W)
+            num_prototypes = pf_xs2.shape[1]
             cmap = plt.get_cmap("hsv", num_prototypes)
             colors = torch.tensor([cmap(k)[:3] for k in range(num_prototypes)], dtype=torch.float32)
 
             for j in range(max_images):
-                img = xs1[j].detach().cpu()
+                # ----- VIEW 2 -----
+                img = xs2[j].detach().cpu()
                 img = torch.clamp(img, 0, 1)
 
-                # ---- boolean mask for this image (view1) ----
-                # m1[j] could be (H,W) or (1,H,W) or (3,H,W); normalize it to (H,W) float in {0,1}
-                mask = m1[j].detach().cpu()
+                # ----- MASK 2 -----
+                mask = m2[j].detach().cpu()
                 if mask.dim() == 3:
                     mask = mask[0]  # (C,H,W) -> (H,W)
 
-                # flip first (in mask's native resolution)
-                #if bool(hflip1[j]):
-                #    mask = torch.flip(mask, dims=[1])
+                # If your dataset flips xs2 but does NOT flip m2, then enable this:
+                # if bool(hflip2[j]):
+                #     mask = torch.flip(mask, dims=[1])
 
                 mask = (mask.float() > 0.2).float()
 
@@ -143,53 +143,27 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 if mask.shape[-2:] != (H_img, W_img):
                     mask = F.interpolate(mask[None, None], size=(H_img, W_img), mode="nearest")[0, 0]
 
-                # --- make a nice visualization ---
+                # --- GT mask overlay (black background + red tint in mask) ---
                 mask3 = mask.unsqueeze(0).repeat(3, 1, 1)  # (3,H,W)
-
-                # Dim outside mask
                 dim_factor = 0.25
                 img_dimmed = img * (mask3 + (1 - mask3) * dim_factor)
 
-                # Add a tinted overlay INSIDE the mask (choose a constant color)
-                # (no need for matplotlib; this is fast)
                 tint = torch.zeros_like(img)
-                tint[0] = 1.0  # red channel = 1, so mask region is red-tinted
+                tint[0] = 1.0  # red tint
 
-                alpha = 0.35  # overlay opacity on masked region
+                alpha = 0.35
                 mask_overlay = img_dimmed * (1 - alpha * mask3) + tint * (alpha * mask3)
                 mask_overlay = torch.clamp(mask_overlay, 0, 1)
 
                 examples_mask_overlay.append(
-                    wandb.Image(
-                        mask_overlay,
-                        caption=f"class: {ys[j].item()} (GT mask overlay)"
-                    )
+                    wandb.Image(mask_overlay, caption=f"class: {ys[j].item()} (GT mask2 overlay)")
                 )
 
-                # resize to image size if needed
-                H_img, W_img = img.shape[-2], img.shape[-1]
-                if mask.shape[-2:] != (H_img, W_img):
-                    mask = F.interpolate(mask[None, None], size=(H_img, W_img), mode="nearest")[0, 0]
+                # ----- Prototype overlay (view2 prototypes) -----
+                fmap = pf_xs2[j].detach().cpu()  # (P, h, w)
 
-                if mask.dim() == 3:
-                    # (C,H,W) -> (H,W)
-                    mask = mask[0]
-                mask = mask.float()
-                mask = (mask > 0.5).float()  # ensure binary 0/1
-
-                # If mask resolution differs from img, resize it
-                H_img, W_img = img.shape[-2], img.shape[-1]
-                if mask.shape[-2:] != (H_img, W_img):
-                    mask = F.interpolate(mask[None, None], size=(H_img, W_img), mode="nearest")[0, 0]
-
-                # ---- dim image outside mask ----
-                dim_factor = 0.25  # 0 = black background, 1 = no dimming
-                img_dimmed = img * (mask.unsqueeze(0) + (1 - mask).unsqueeze(0) * dim_factor)
-
-                fmap = pf_xs1[j].detach().cpu()  # (P, H, W)
-
-                proto_idx = torch.argmax(fmap, dim=0)  # (H, W)
-                proto_conf = torch.max(fmap, dim=0).values  # (H, W)
+                proto_idx = torch.argmax(fmap, dim=0)  # (h, w)
+                proto_conf = torch.max(fmap, dim=0).values  # (h, w)
 
                 proto_idx_up = F.interpolate(
                     proto_idx[None, None].float(), size=(H_img, W_img), mode="nearest"
@@ -201,29 +175,23 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
                 colored = colors[proto_idx_up].permute(2, 0, 1).float()  # (3,H,W)
 
-                # confidence-weighted alpha
                 base_alpha = 0.15
                 conf_alpha = 0.75
-                alpha_map = (base_alpha + conf_alpha * proto_conf_up).clamp(0, 1)  # (H,W)
+                alpha_map = (base_alpha + conf_alpha * proto_conf_up).clamp(0, 1)
 
-                # ---- also suppress overlay outside mask (recommended) ----
-                # this prevents painting prototypes on background
+                # suppress overlay outside GT mask2
                 alpha_map = alpha_map * mask
 
                 overlay = alpha_map.unsqueeze(0) * colored + (1 - alpha_map).unsqueeze(0) * img_dimmed
                 overlay = torch.clamp(overlay, 0, 1)
-                # log
-                examples_original.append(
-                    wandb.Image(img, caption=f"class: {ys[j].item()}")
-                )
-                examples_overlay.append(
-                    wandb.Image(overlay, caption=f"class: {ys[j].item()} (proto overlay)")
-                )
 
-            # (optional) show legend only for prototypes used in these images
+                examples_original.append(wandb.Image(img, caption=f"class: {ys[j].item()} (view2)"))
+                examples_overlay.append(wandb.Image(overlay, caption=f"class: {ys[j].item()} (view2 proto overlay)"))
+
+            # legend (only prototypes used in view2 examples)
             used = set()
             for j in range(max_images):
-                fmap = pf_xs1[j].detach().cpu()
+                fmap = pf_xs2[j].detach().cpu()
                 used |= set(torch.unique(torch.argmax(fmap, dim=0)).tolist())
             used = sorted(list(used))
 
@@ -231,6 +199,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
             global_step = global_step_base + (epoch - 1) * len(train_loader) + i
             phase = "pretrain" if pretrain else ("finetune" if finetune else "train")
+
             wandb.log(
                 {
                     f"viz/original_{phase}": examples_original,
