@@ -27,7 +27,7 @@ ls -l "$PY"
 "$PY" main.py \
   --dataset grayscale_mito \
   --epochs 16 \
-  --epochs_pretrain 8 \
+  --epochs_pretrain 0 \
   --batch_size 16 \
   --freeze_epochs 10 \
   --log_dir ./runs/paper_runs/mito_convnext_tiny_2img_vit \
