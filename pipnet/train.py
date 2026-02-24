@@ -353,6 +353,18 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 },
                 step=global_step,
             )
+
+        def outside_entropy_penalty(proto_features, visible_mask, *, eps=1e-8):
+            # proto_features assumed probs
+            outside = (~visible_mask).unsqueeze(1)  # [B,1,H,W]
+            Q = proto_features.clamp_min(eps)
+            ent = -(Q * Q.log()).sum(dim=1)  # [B,H,W]
+            ent_out = ent * outside[:, 0].to(ent.dtype)
+            denom = outside[:, 0].float().sum(dim=(1, 2)).clamp_min(1.0)
+            per_img = ent_out.sum(dim=(1, 2)) / denom
+            # maximize entropy outside == minimize negative entropy outside
+            return -per_img.mean()
+
         loss, acc, loss_dict = calculate_loss(
             proto_features_bal, proto_features_ds_bal, pooled,
             hflip1, hflip2, out, ys,
@@ -361,6 +373,21 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             pretrain, finetune, criterion, train_iter,
             print=True, EPS=1e-8
         )
+
+        B = xs1.shape[0]  # batch size of one view
+
+        # compute penalty on the SAME maps you train with
+        pen_big = outside_entropy_penalty(proto_features_bal[B:], mask_view2_grid)
+        pen_ds = outside_entropy_penalty(proto_features_ds_bal[B:], mask_view2_grid_ds)
+        outside_pen = pen_big + pen_ds
+
+        lambda_out = 1e-3  # tune (start 1e-4..1e-3)
+        loss = loss + lambda_out * outside_pen
+
+        # optional logging
+        loss_dict["loss_out_entropy"] = outside_pen.detach()
+        loss_dict["loss_total"] = loss.detach()
+
         global_step = global_step_offset + i
         loss_dict["global_step"] = global_step
         wandb.log(loss_dict)
