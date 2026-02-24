@@ -34,15 +34,18 @@ class PIPNet(nn.Module):
         features = self._net(xs)
         features_ds = self._net(xs_ds)
 
-        proto_features = self._add_on(features)  # [B,D,H,W] logits
-        proto_features_ds = self._add_on(features_ds)  # [B,D,Hds,Wds] logits
+        proto_features = self._add_on(features)
+        proto_features_ds = self._add_on(features_ds)
 
         proto_features = F.softmax(proto_features, dim=1)
         proto_features_ds = F.softmax(proto_features_ds, dim=1)
 
-        pooled_big = proto_features.amax(dim=(2, 3))  # [B,D]
-        pooled_ds = proto_features_ds.amax(dim=(2, 3))  # [B,D]
-        pooled = torch.maximum(pooled_big, pooled_ds)  # [B,D]
+        pooled_big = proto_features.amax(dim=(2, 3))
+        pooled_ds = proto_features_ds.amax(dim=(2, 3))
+
+        pooled_joint = torch.maximum(pooled_big, pooled_ds)
+        pooled_ctx = pooled_big - pooled_ds
+        pooled = torch.cat([pooled_joint, pooled_ctx], dim=1)  # still 2D
 
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)
@@ -51,7 +54,6 @@ class PIPNet(nn.Module):
         else:
             out = self._classification(pooled)
             return proto_features, proto_features_ds, pooled, out
-
 
 base_architecture_to_features = {'resnet18': resnet18_features,
                                  'resnet34': resnet34_features,
