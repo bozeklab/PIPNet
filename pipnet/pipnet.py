@@ -44,7 +44,7 @@ class PIPNet(nn.Module):
         pooled_ds = proto_features_ds.amax(dim=(2, 3))
 
         pooled_joint = torch.maximum(pooled_big, pooled_ds)
-        pooled_ctx = pooled_big - pooled_ds
+        pooled_ctx = 0.5 * (pooled_big + pooled_ds)
         pooled = torch.cat([pooled_joint, pooled_ctx], dim=1)  # still 2D
 
         if inference:
