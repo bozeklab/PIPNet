@@ -33,29 +33,23 @@ class PIPNet(nn.Module):
     def forward(self, xs, xs_ds, inference=False):
         features = self._net(xs)
         features_ds = self._net(xs_ds)
-        proto_features = self._add_on(features)
-        proto_features_ds = self._add_on(features_ds)
-        B, D, H, W = proto_features.shape
-        _, _, H_ds, W_ds = proto_features_ds.shape
-        p_f_flat = proto_features.view(B, D, -1).permute(0, 2, 1).reshape(-1, D)
-        p_f_ds_flat = proto_features_ds.view(B, D, -1).permute(0, 2, 1).reshape(-1, D)
-        combined = torch.cat([p_f_flat, p_f_ds_flat], dim=0)
-        softmax_combined = F.softmax(combined, dim=1)
 
-        p_f_flat = softmax_combined[:p_f_flat.size(0)]
-        p_f_ds_flat = softmax_combined[p_f_flat.size(0):]
-        proto_features = p_f_flat.view(B, H*W, D).permute(0, 2, 1).view(B, D, H, W)
-        proto_features_ds = p_f_ds_flat.view(B, H_ds*W_ds, D).permute(0, 2, 1).view(B, D, H_ds, W_ds)
+        proto_features = self._add_on(features)  # [B,D,H,W] logits
+        proto_features_ds = self._add_on(features_ds)  # [B,D,Hds,Wds] logits
 
-        pooled = self._pool(proto_features)
-        pooled_ds = self._pool(proto_features_ds)
-        pooled = torch.cat([pooled, pooled_ds], dim=1)
+        proto_features = F.softmax(proto_features, dim=1)
+        proto_features_ds = F.softmax(proto_features_ds, dim=1)
+
+        pooled_big = proto_features.amax(dim=(2, 3))  # [B,D]
+        pooled_ds = proto_features_ds.amax(dim=(2, 3))  # [B,D]
+        pooled = torch.maximum(pooled_big, pooled_ds)  # [B,D]
+
         if inference:
-            clamped_pooled = torch.where(pooled < 0.1, 0., pooled)  #during inference, ignore all prototypes that have 0.1 similarity or lower
-            out = self._classification(clamped_pooled) #shape (bs*2, num_classes)
+            clamped_pooled = torch.where(pooled < 0.1, 0., pooled)
+            out = self._classification(clamped_pooled)
             return proto_features, proto_features_ds, clamped_pooled, out
         else:
-            out = self._classification(pooled) #shape (bs*2, num_classes) 
+            out = self._classification(pooled)
             return proto_features, proto_features_ds, pooled, out
 
 
