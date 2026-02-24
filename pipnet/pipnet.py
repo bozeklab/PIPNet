@@ -42,10 +42,8 @@ class PIPNet(nn.Module):
 
         pooled_big = self._pool(proto_features)  # [B, D]
         pooled_ds = self._pool(proto_features_ds)
-
-        pooled_joint = torch.maximum(pooled_big, pooled_ds)
-        pooled_ctx = 0.5 * (pooled_big + pooled_ds)
-        pooled = torch.cat([pooled_joint, pooled_ctx], dim=1)  # still 2D
+        # union of two pools (2D distinct prototypes)
+        pooled = torch.cat([pooled_big, pooled_ds], dim=1)  # [B, 2D]
 
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)
