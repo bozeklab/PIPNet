@@ -385,11 +385,11 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         loss = loss + lambda_out * outside_pen
 
         # optional logging
-        loss_dict["loss_out_entropy"] = outside_pen.detach()
-        loss_dict["loss_total"] = loss.detach()
+        loss_dict = dict(loss_dict)  # ensures it's a plain mutable dict
+        loss_dict["loss_out_entropy"] = outside_pen.item()  # use item() for W&B safety
+        loss_dict["loss_total"] = loss.item()
+        loss_dict["global_step"] = global_step_offset + i
 
-        global_step = global_step_offset + i
-        loss_dict["global_step"] = global_step
         wandb.log(loss_dict)
         # Compute the gradient
         loss.backward()
