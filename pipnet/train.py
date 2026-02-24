@@ -121,73 +121,95 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             num_prototypes = pf_xs2.shape[1]
             cmap = plt.get_cmap("hsv", num_prototypes)
             colors = torch.tensor([cmap(k)[:3] for k in range(num_prototypes)], dtype=torch.float32)
-
             for j in range(max_images):
-                # ----- VIEW 2 -----
+
+                # ----- VIEW 2 IMAGE -----
                 img = xs2[j].detach().cpu()
                 img = torch.clamp(img, 0, 1)
 
-                # ----- MASK 2 -----
-                mask = m2[j].detach().cpu()
+                # ----- VIEW 2 MASK (already boolean + flipped correctly) -----
+                mask = m1[j].detach().cpu()  # m1 is bm2 from dataset
+
+                # Normalize mask shape to (H, W)
                 if mask.dim() == 3:
-                    mask = mask[0]  # (C,H,W) -> (H,W)
+                    mask = mask[0]  # (1,H,W) -> (H,W)
 
-                # If your dataset flips xs2 but does NOT flip m2, then enable this:
-                # if bool(hflip2[j]):
-                #     mask = torch.flip(mask, dims=[1])
+                mask = mask.float()  # already 0/1 from create_boolean_mask
 
-                mask = (mask.float() > 0.2).float()
-
-                # Ensure mask matches image size
                 H_img, W_img = img.shape[-2], img.shape[-1]
-                if mask.shape[-2:] != (H_img, W_img):
-                    mask = F.interpolate(mask[None, None], size=(H_img, W_img), mode="nearest")[0, 0]
 
-                # --- GT mask overlay (black background + red tint in mask) ---
-                mask3 = mask.unsqueeze(0).repeat(3, 1, 1)  # (3,H,W)
+                # Resize mask if needed (should normally already match)
+                if mask.shape[-2:] != (H_img, W_img):
+                    mask = F.interpolate(
+                        mask.unsqueeze(0).unsqueeze(0),
+                        size=(H_img, W_img),
+                        mode="nearest"
+                    )[0, 0]
+
+                # -----------------------------
+                # Ground-truth mask visualization
+                # -----------------------------
+
+                mask3 = mask.unsqueeze(0).expand(3, -1, -1)  # (3,H,W)
+
                 dim_factor = 0.25
                 img_dimmed = img * (mask3 + (1 - mask3) * dim_factor)
 
+                # red tint in masked region
                 tint = torch.zeros_like(img)
-                tint[0] = 1.0  # red tint
+                tint[0] = 1.0
 
                 alpha = 0.35
                 mask_overlay = img_dimmed * (1 - alpha * mask3) + tint * (alpha * mask3)
                 mask_overlay = torch.clamp(mask_overlay, 0, 1)
 
                 examples_mask_overlay.append(
-                    wandb.Image(mask_overlay, caption=f"class: {ys[j].item()} (GT mask2 overlay)")
+                    wandb.Image(mask_overlay, caption=f"class: {ys[j].item()} (view2 GT mask)")
                 )
 
-                # ----- Prototype overlay (view2 prototypes) -----
-                fmap = pf_xs2[j].detach().cpu()  # (P, h, w)
+                # -----------------------------
+                # Prototype overlay
+                # -----------------------------
 
-                proto_idx = torch.argmax(fmap, dim=0)  # (h, w)
-                proto_conf = torch.max(fmap, dim=0).values  # (h, w)
+                fmap = pf_xs2[j].detach().cpu()
+
+                proto_idx = torch.argmax(fmap, dim=0)
+                proto_conf = torch.max(fmap, dim=0).values
 
                 proto_idx_up = F.interpolate(
-                    proto_idx[None, None].float(), size=(H_img, W_img), mode="nearest"
+                    proto_idx.unsqueeze(0).unsqueeze(0).float(),
+                    size=(H_img, W_img),
+                    mode="nearest"
                 )[0, 0].long()
 
                 proto_conf_up = F.interpolate(
-                    proto_conf[None, None], size=(H_img, W_img), mode="bilinear", align_corners=False
+                    proto_conf.unsqueeze(0).unsqueeze(0),
+                    size=(H_img, W_img),
+                    mode="bilinear",
+                    align_corners=False
                 )[0, 0].clamp(0, 1)
 
-                colored = colors[proto_idx_up].permute(2, 0, 1).float()  # (3,H,W)
+                colored = colors[proto_idx_up].permute(2, 0, 1).float()
 
                 base_alpha = 0.15
                 conf_alpha = 0.75
                 alpha_map = (base_alpha + conf_alpha * proto_conf_up).clamp(0, 1)
 
-                # suppress overlay outside GT mask2
                 alpha_map = alpha_map * mask
 
-                overlay = alpha_map.unsqueeze(0) * colored + (1 - alpha_map).unsqueeze(0) * img_dimmed
+                overlay = (
+                        alpha_map.unsqueeze(0) * colored
+                        + (1 - alpha_map).unsqueeze(0) * img_dimmed
+                )
+
                 overlay = torch.clamp(overlay, 0, 1)
 
-                examples_original.append(wandb.Image(img, caption=f"class: {ys[j].item()} (view2)"))
-                examples_overlay.append(wandb.Image(overlay, caption=f"class: {ys[j].item()} (view2 proto overlay)"))
-
+                examples_original.append(
+                    wandb.Image(img, caption=f"class: {ys[j].item()} (view2)")
+                )
+                examples_overlay.append(
+                    wandb.Image(overlay, caption=f"class: {ys[j].item()} (view2 proto)")
+                )
             # legend (only prototypes used in view2 examples)
             used = set()
             for j in range(max_images):
