@@ -188,34 +188,45 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
             return mask_grid > 0.5
 
-        # View 1: no mask available → allow all patches
-        mask_view1_grid = torch.ones(
-            batch_size, grid_h, grid_w,
-            device=proto_features.device,
-            dtype=torch.bool
-        )
+        batch2, D, grid_h, grid_w = proto_features.shape
+        batch_size = xs1.shape[0]
+        assert batch2 == 2 * batch_size
 
-        # View 2: use provided m2
-        mask_view2_grid = resize_mask_to_grid(
-            m2, grid_h, grid_w, proto_features.device
-        )
+        # ---- BIG mask ----
+        mask_view1_grid = torch.ones(batch_size, grid_h, grid_w, device=proto_features.device, dtype=torch.bool)
+        mask_view2_grid = resize_mask_to_grid(m2, grid_h, grid_w, proto_features.device)  # [B,grid_h,grid_w]
 
-        # Concatenate to match cat([xs1, xs2])
-        visible_mask_big = torch.cat(
-            [mask_view1_grid, mask_view2_grid],
-            dim=0
-        )  # [2B, grid_h, grid_w]
-        # ---- apply balancing (ONLY big scale) ----
+        visible_mask_big = torch.cat([mask_view1_grid, mask_view2_grid], dim=0)  # [2B,grid_h,grid_w]
+
+        # ---- SMALL/DS mask ----
+        _, _, grid_h_ds, grid_w_ds = proto_features_ds.shape
+
+        mask_view1_grid_ds = torch.ones(batch_size, grid_h_ds, grid_w_ds, device=proto_features.device,
+                                        dtype=torch.bool)
+
+        # Prefer m2_ds if it matches xs2_ds; otherwise you can reuse m2 and resize
+        mask_view2_grid_ds = resize_mask_to_grid(m2_ds, grid_h_ds, grid_w_ds,
+                                                 proto_features.device)  # [B,grid_h_ds,grid_w_ds]
+
+        visible_mask_ds = torch.cat([mask_view1_grid_ds, mask_view2_grid_ds], dim=0)  # [2B,grid_h_ds,grid_w_ds]
+
+        # ---- apply balancing on BOTH scales ----
         proto_features_bal = sinkhorn_balance_probs_in_mask(
             proto_features, visible_mask_big,
             n_iters=5,
             momentum=0.0,
         )
 
-        # ---- recompute pooled/out so loss sees the balanced map ----
-        pooled_big = net.module._pool(proto_features_bal).flatten(1)
-        pooled_ds = net.module._pool(proto_features_ds).flatten(1)  # unchanged (you can also balance ds similarly)
-        pooled = torch.cat([pooled_big, pooled_ds], dim=1)
+        proto_features_ds_bal = sinkhorn_balance_probs_in_mask(
+            proto_features_ds, visible_mask_ds,
+            n_iters=5,
+            momentum=0.0,
+        )
+
+        # ---- recompute pooled/out so loss sees the balanced maps ----
+        pooled_big = net.module._pool(proto_features_bal).flatten(1)  # [2B, D]
+        pooled_ds = net.module._pool(proto_features_ds_bal).flatten(1)  # [2B, D]
+        pooled = torch.cat([pooled_big, pooled_ds], dim=1)  # [2B, 2D]
         out = net.module._classification(pooled)
         log_every = 10
         if wandb.run is not None and (i % log_every == 0 or i == 0):
