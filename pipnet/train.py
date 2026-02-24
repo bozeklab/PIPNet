@@ -128,7 +128,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 img = torch.clamp(img, 0, 1)
 
                 # ----- VIEW 2 MASK (already boolean + flipped correctly) -----
-                mask = m1[j].detach().cpu()  # m1 is bm2 from dataset
+                mask = m2[j].detach().cpu()  # m1 is bm2 from dataset
 
                 # Normalize mask shape to (H, W)
                 if mask.dim() == 3:
