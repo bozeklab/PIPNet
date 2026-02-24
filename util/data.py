@@ -584,7 +584,9 @@ class FourAugSupervisedDataset(torch.utils.data.Dataset):
 
         # flip view2 + mask view2 together
         im2, hflip1 = self.flip(im2)
-        m2, _ = self.flip(m2)
+
+        if hflip1:
+            m2 = torch.flip(m2, dims=[2])  # horizontal flip
 
         # ---------- downsample branch ----------
         # view1_ds
