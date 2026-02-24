@@ -223,7 +223,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             max_images = min(2, bs)
 
             # proto_features assumed shape: (2*B, P, h, w) corresponding to cat([xs1, xs2])
-            pf_xs2 = proto_features[bs:]  # corresponds to xs2 (view 2)
+            pf_xs2 = proto_features_bal[bs:]  # corresponds to xs2 (view 2)
 
             examples_original = []
             examples_overlay = []
