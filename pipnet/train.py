@@ -8,6 +8,61 @@ import io
 from PIL import Image
 
 
+import torch
+
+
+def sinkhorn_balance_probs_in_mask(
+    Q: torch.Tensor,             # [B, D, H, W] probs (already softmax)
+    mask: torch.Tensor,          # [B, H, W] bool
+    *,
+    n_iters: int = 5,
+    eps: float = 1e-6,
+    momentum: float = 0.0,       # 0 = replace by balanced; >0 = EMA mix with original
+):
+    """
+    Rebalances prototype usage inside the mask using Sinkhorn-like row/col normalization,
+    starting from an existing assignment Q (no logits needed).
+
+    Returns:
+      Q_out: [B, D, H, W]
+    """
+    assert Q.ndim == 4
+    B, D, H, W = Q.shape
+    assert mask.shape == (B, H, W) and mask.dtype == torch.bool
+
+    # [B, N, D]
+    Qn = Q.permute(0, 2, 3, 1).reshape(B, H * W, D).clamp_min(eps)
+    M  = mask.reshape(B, H * W)  # [B, N]
+
+    Q_out = Qn.clone()
+
+    for b in range(B):
+        mb = M[b]
+        if mb.sum() == 0:
+            continue
+
+        A = Qn[b, mb, :]                      # [N_mask, D]
+        A = A / (A.sum(dim=1, keepdim=True) + eps)  # row-normalize
+
+        # target: balanced column mass (uniform over D) within this image/mask
+        for _ in range(n_iters):
+            # column normalize (equalize prototype usage)
+            col = A.sum(dim=0, keepdim=True) + eps    # [1, D]
+            A = A / col
+            # row normalize again (keep per-patch distribution)
+            A = A / (A.sum(dim=1, keepdim=True) + eps)
+
+        if momentum > 0.0:
+            A = momentum * Qn[b, mb, :] + (1.0 - momentum) * A
+            A = A / (A.sum(dim=1, keepdim=True) + eps)
+
+        Q_out[b, mb, :] = A
+
+    # back to [B, D, H, W]
+    Q_out = Q_out.view(B, H, W, D).permute(0, 3, 1, 2)
+    return Q_out
+
+
 def create_proto_legend(colors, proto_ids=None, max_items=25):
     """
     colors: torch.Tensor (P,3) on CPU or GPU in [0,1]
@@ -92,7 +147,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
     # Iterate through the data set to update leaves, prototypes and network
     for i, (xs1, xs2, m2, xs1_ds, xs2_ds, m2_ds, hflip1, hflip2, ys) in train_iter:
-        
+
         xs1, xs2, xs1_ds, xs2_ds, ys = xs1.to(device), xs2.to(device), xs1_ds.to(device), xs2_ds.to(device), ys.to(device)
 
         # Log example images occasionally
@@ -106,6 +161,62 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             torch.cat([xs1_ds, xs2_ds])
         )
 
+        # ---- build visible mask for BIG scale (proto_features resolution) ----
+        # proto_features: [2B, D, h, w]
+        B2, D, h, w = proto_features.shape
+        bs = xs1.shape[0]
+        assert B2 == 2 * bs
+        batch2, num_parts, grid_h, grid_w = proto_features.shape
+        batch_size = xs1.shape[0]
+        assert batch2 == 2 * batch_size
+
+        def resize_mask_to_grid(mask_img, grid_h, grid_w, device):
+            """
+            mask_img: [B, H_img, W_img] or [B,1,H_img,W_img]
+            returns:  [B, grid_h, grid_w] bool
+            """
+            if mask_img.dim() == 4 and mask_img.shape[1] == 1:
+                mask_img = mask_img[:, 0]
+
+            mask_img = mask_img.to(device=device, dtype=torch.float32)
+
+            mask_grid = F.interpolate(
+                mask_img.unsqueeze(1),  # [B,1,H,W]
+                size=(grid_h, grid_w),
+                mode="nearest"
+            )[:, 0]  # [B,grid_h,grid_w]
+
+            return mask_grid > 0.5
+
+        # View 1: no mask available → allow all patches
+        mask_view1_grid = torch.ones(
+            batch_size, grid_h, grid_w,
+            device=proto_features.device,
+            dtype=torch.bool
+        )
+
+        # View 2: use provided m2
+        mask_view2_grid = resize_mask_to_grid(
+            m2, grid_h, grid_w, proto_features.device
+        )
+
+        # Concatenate to match cat([xs1, xs2])
+        visible_mask_big = torch.cat(
+            [mask_view1_grid, mask_view2_grid],
+            dim=0
+        )  # [2B, grid_h, grid_w]
+        # ---- apply balancing (ONLY big scale) ----
+        proto_features_bal = sinkhorn_balance_probs_in_mask(
+            proto_features, visible_mask_big,
+            n_iters=5,
+            momentum=0.9,
+        )
+
+        # ---- recompute pooled/out so loss sees the balanced map ----
+        pooled_big = net.module._pool(proto_features_bal).flatten(1)
+        pooled_ds = net.module._pool(proto_features_ds).flatten(1)  # unchanged (you can also balance ds similarly)
+        pooled = torch.cat([pooled_big, pooled_ds], dim=1)
+        out = net.module._classification(pooled)
         log_every = 10
         if wandb.run is not None and (i % log_every == 0 or i == 0):
             bs = xs1.shape[0]
