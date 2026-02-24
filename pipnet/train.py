@@ -353,8 +353,14 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 },
                 step=global_step,
             )
-        loss, acc, loss_dict = calculate_loss(proto_features, proto_features_ds, pooled, hflip1, hflip2, out, ys, align_pf_weight, t_weight, unif_weight, cl_weight,
-                                   net.module._classification.normalization_multiplier, pretrain, finetune, criterion, train_iter, print=True, EPS=1e-8)
+        loss, acc, loss_dict = calculate_loss(
+            proto_features_bal, proto_features_ds_bal, pooled,
+            hflip1, hflip2, out, ys,
+            align_pf_weight, t_weight, unif_weight, cl_weight,
+            net.module._classification.normalization_multiplier,
+            pretrain, finetune, criterion, train_iter,
+            print=True, EPS=1e-8
+        )
         global_step = global_step_offset + i
         loss_dict["global_step"] = global_step
         wandb.log(loss_dict)
