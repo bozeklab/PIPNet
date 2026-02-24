@@ -40,8 +40,8 @@ class PIPNet(nn.Module):
         proto_features = F.softmax(proto_features, dim=1)
         proto_features_ds = F.softmax(proto_features_ds, dim=1)
 
-        pooled_big = proto_features.amax(dim=(2, 3))
-        pooled_ds = proto_features_ds.amax(dim=(2, 3))
+        pooled_big = self._pool(proto_features)  # [B, D]
+        pooled_ds = self._pool(proto_features_ds)
 
         pooled_joint = torch.maximum(pooled_big, pooled_ds)
         pooled_ctx = 0.5 * (pooled_big + pooled_ds)
