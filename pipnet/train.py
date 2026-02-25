@@ -381,7 +381,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         pen_ds = outside_entropy_penalty(proto_features_ds_bal[B:], mask_view2_grid_ds)
         outside_pen = pen_big + pen_ds
 
-        lambda_out = 1e-3  # tune (start 1e-4..1e-3)
+        lambda_out = 5e-3  # tune (start 1e-4..1e-3)
         loss = loss + lambda_out * outside_pen
 
         # optional logging
