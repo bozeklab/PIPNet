@@ -354,16 +354,26 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
                 step=global_step,
             )
 
-        def outside_entropy_penalty(proto_features, visible_mask, *, eps=1e-8):
-            # proto_features assumed probs
-            outside = (~visible_mask).unsqueeze(1)  # [B,1,H,W]
-            Q = proto_features.clamp_min(eps)
-            ent = -(Q * Q.log()).sum(dim=1)  # [B,H,W]
-            ent_out = ent * outside[:, 0].to(ent.dtype)
-            denom = outside[:, 0].float().sum(dim=(1, 2)).clamp_min(1.0)
-            per_img = ent_out.sum(dim=(1, 2)) / denom
-            # maximize entropy outside == minimize negative entropy outside
-            return -per_img.mean()
+        def outside_soft_suppression(proto_features, visible_mask, power=2.0):
+            """
+            proto_features: [B, D, H, W]  (probabilities after softmax)
+            visible_mask:   [B, H, W] bool (True = allowed region)
+            power:          >1 increases focus on strong spikes
+            """
+
+            outside = (~visible_mask)  # [B,H,W] bool
+
+            # Confidence per pixel = strongest prototype
+            max_prob = proto_features.max(dim=1).values  # [B,H,W]
+
+            # Keep only outside pixels
+            max_prob_out = max_prob * outside.to(max_prob.dtype)
+
+            # Normalize per image
+            denom = outside.float().sum(dim=(1, 2)).clamp_min(1.0)
+            per_img = (max_prob_out.pow(power).sum(dim=(1, 2)) / denom)
+
+            return per_img.mean()
 
         loss, acc, loss_dict = calculate_loss(
             proto_features_bal, proto_features_ds_bal, pooled,
@@ -377,13 +387,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         B = xs1.shape[0]  # batch size of one view
 
         # compute penalty on the SAME maps you train with
-        pen_big = outside_entropy_penalty(proto_features_bal[B:], mask_view2_grid)
-        pen_ds = outside_entropy_penalty(proto_features_ds_bal[B:], mask_view2_grid_ds)
+        pen_big = outside_soft_suppression(proto_features[B:], mask_view2_grid, power=2.0)
+        pen_ds = outside_soft_suppression(proto_features_ds[B:], mask_view2_grid_ds, power=2.0)
+
         outside_pen = pen_big + pen_ds
 
-        lambda_out = 5e-2  # tune (start 1e-4..1e-3)
+        lambda_out = 1e-2  # start 1e-3..1e-2
         loss = loss + lambda_out * outside_pen
-
         # optional logging
         loss_dict = dict(loss_dict)  # ensures it's a plain mutable dict
         loss_dict[f"{phase}/loss_out_entropy"] = outside_pen.item()  # use item() for W&B safety
