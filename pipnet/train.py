@@ -16,7 +16,7 @@ def sinkhorn_balance_probs_in_mask(
     mask: torch.Tensor,          # [B, H, W] bool
     *,
     n_iters: int = 5,
-    eps: float = 1e-6,
+    eps: float = 0.05,
     momentum: float = 0.0,       # 0 = replace by balanced; >0 = EMA mix with original
 ):
     """
