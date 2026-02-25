@@ -214,13 +214,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         proto_features_bal = sinkhorn_balance_probs_in_mask(
             proto_features, visible_mask_big,
             n_iters=5,
-            momentum=0.1,
+            momentum=1.0,
         )
 
         proto_features_ds_bal = sinkhorn_balance_probs_in_mask(
             proto_features_ds, visible_mask_ds,
             n_iters=5,
-            momentum=0.1,
+            momentum=1.0,
         )
 
         # ---- recompute pooled/out so loss sees the balanced maps ----
