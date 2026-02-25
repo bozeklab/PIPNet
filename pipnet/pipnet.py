@@ -115,7 +115,7 @@ def get_network(num_classes: int, args: argparse.Namespace):
             p.requires_grad = False
 
         # Unfreeze last N blocks
-        N = 4  # e.g. 2
+        N = 3  # e.g. 2
         for blk in vit.blocks[-N:]:
             for p in blk.parameters():
                 p.requires_grad = True
