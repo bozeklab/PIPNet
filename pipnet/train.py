@@ -214,13 +214,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         proto_features_bal = sinkhorn_balance_probs_in_mask(
             proto_features, visible_mask_big,
             n_iters=5,
-            momentum=0.4,
+            momentum=0.1,
         )
 
         proto_features_ds_bal = sinkhorn_balance_probs_in_mask(
             proto_features_ds, visible_mask_ds,
             n_iters=5,
-            momentum=0.4,
+            momentum=0.1,
         )
 
         # ---- recompute pooled/out so loss sees the balanced maps ----
@@ -386,8 +386,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
         # optional logging
         loss_dict = dict(loss_dict)  # ensures it's a plain mutable dict
-        loss_dict["loss_out_entropy"] = outside_pen.item()  # use item() for W&B safety
-        loss_dict["loss_total"] = loss.item()
+        loss_dict[f"{phase}/loss_out_entropy"] = outside_pen.item()  # use item() for W&B safety
+        loss_dict[f"{phase}/loss_total"] = loss.item()
         loss_dict["global_step"] = global_step_offset + i
 
         wandb.log(loss_dict)
