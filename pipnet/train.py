@@ -16,12 +16,16 @@ def sinkhorn_balance_probs_in_mask(
     mask: torch.Tensor,          # [B, H, W] bool
     *,
     n_iters: int = 5,
-    eps: float = 0.05,
+    eps: float = 1e-6,
     momentum: float = 0.0,       # 0 = replace by balanced; >0 = EMA mix with original
+    k_active: int = None, # if None, choose automatically per mask
+    min_k: int = 2,
+    max_k: int = None,    # if None, max_k = D
+    pixels_per_proto: int = 64,  # auto K ≈ N_mask / pixels_per_proto
 ):
     """
-    Rebalances prototype usage inside the mask using Sinkhorn-like row/col normalization,
-    starting from an existing assignment Q (no logits needed).
+    Rebalances prototype usage inside the mask.
+    Works on probabilities (no logits). Output is still per-pixel probs.
 
     Returns:
       Q_out: [B, D, H, W]
@@ -30,37 +34,70 @@ def sinkhorn_balance_probs_in_mask(
     B, D, H, W = Q.shape
     assert mask.shape == (B, H, W) and mask.dtype == torch.bool
 
-    # [B, N, D]
-    Qn = Q.permute(0, 2, 3, 1).reshape(B, H * W, D).clamp_min(eps)
-    M  = mask.reshape(B, H * W)  # [B, N]
+    N = H * W
+    Qn = Q.permute(0, 2, 3, 1).reshape(B, N, D).clamp_min(eps)  # [B,N,D]
+    M  = mask.reshape(B, N)                                      # [B,N]
 
     Q_out = Qn.clone()
 
+    if max_k is None:
+        max_k = D
+
     for b in range(B):
         mb = M[b]
-        if mb.sum() == 0:
+        n_mask = int(mb.sum().item())
+        if n_mask == 0:
             continue
 
-        A = Qn[b, mb, :]                      # [N_mask, D]
-        A = A / (A.sum(dim=1, keepdim=True) + eps)  # row-normalize
+        A0 = Qn[b, mb, :]  # [N_mask, D]
+        A0 = A0 / (A0.sum(dim=1, keepdim=True) + eps)  # row-stochastic
 
-        # target: balanced column mass (uniform over D) within this image/mask
+        # choose K prototypes to balance inside this mask
+        if k_active is None:
+            K = max(min_k, min(max_k, n_mask // pixels_per_proto))
+            K = min(K, D)
+        else:
+            K = max(min_k, min(max_k, k_active))
+            K = min(K, D)
+
+        if K < D:
+            mass = A0.sum(dim=0)                      # [D]
+            topk = torch.topk(mass, k=K, largest=True).indices
+            A = A0[:, topk]                           # [N_mask, K]
+        else:
+            topk = None
+            A = A0                                    # [N_mask, D]
+
+        # Explicit column target mass (uniform over active prototypes)
+        # Total mass per iteration is ~N_mask because rows sum to 1.
+        target_col = A.sum() / A.shape[1]             # scalar
+
         for _ in range(n_iters):
-            # column normalize (equalize prototype usage)
-            col = A.sum(dim=0, keepdim=True) + eps    # [1, D]
-            A = A / col
-            # row normalize again (keep per-patch distribution)
+            # row normalize (keep per-pixel distribution)
             A = A / (A.sum(dim=1, keepdim=True) + eps)
+
+            # column scaling to hit uniform target
+            col = A.sum(dim=0, keepdim=True) + eps    # [1,K] or [1,D]
+            A = A * (target_col / col)
+
+        # final row normalize for clean probs
+        A = A / (A.sum(dim=1, keepdim=True) + eps)
+
+        # put back into full D
+        if topk is not None:
+            A_full = torch.zeros_like(A0)
+            A_full[:, topk] = A
+            A_full = A_full / (A_full.sum(dim=1, keepdim=True) + eps)
+        else:
+            A_full = A
 
         if momentum > 0.0:
-            A = momentum * Qn[b, mb, :] + (1.0 - momentum) * A
-            A = A / (A.sum(dim=1, keepdim=True) + eps)
+            A_full = momentum * A0 + (1.0 - momentum) * A_full
+            A_full = A_full / (A_full.sum(dim=1, keepdim=True) + eps)
 
-        Q_out[b, mb, :] = A
+        Q_out[b, mb, :] = A_full
 
-    # back to [B, D, H, W]
-    Q_out = Q_out.view(B, H, W, D).permute(0, 3, 1, 2)
-    return Q_out
+    return Q_out.view(B, H, W, D).permute(0, 3, 1, 2)
 
 
 def create_proto_legend(colors, proto_ids=None, max_items=25):
