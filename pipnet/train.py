@@ -5,6 +5,7 @@ from tqdm import tqdm
 import torch
 import wandb
 import io
+import cv2
 from PIL import Image
 
 
@@ -400,6 +401,50 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             per_img = (conf_out.pow(power).sum(dim=(1, 2)) / denom)
             return per_img.mean()
 
+        @torch.no_grad()
+        def overlay_outside_conf_on_image(img_tensor, proto_features, visible_mask,
+                                          tau=0.2, eps=1e-6):
+            """
+            img_tensor:      [3,H_img,W_img] (0-1 or 0-255)
+            proto_features:  [D,H_tok,W_tok]
+            visible_mask:    [H_tok,W_tok] bool
+            """
+
+            # --- compute smooth max confidence ---
+            conf = tau * torch.logsumexp(
+                (proto_features.clamp_min(eps)).log() / tau,
+                dim=0
+            )  # [H_tok,W_tok]
+
+            outside = (~visible_mask)
+            conf_out = conf * outside
+
+            # normalize for display
+            conf_out = conf_out - conf_out.min()
+            if conf_out.max() > 0:
+                conf_out = conf_out / conf_out.max()
+
+            conf_np = conf_out.cpu().numpy()
+
+            # upsample to image resolution
+            H_img, W_img = img_tensor.shape[1:]
+            conf_up = cv2.resize(conf_np, (W_img, H_img), interpolation=cv2.INTER_NEAREST)
+
+            # convert image to numpy
+            img = img_tensor.permute(1, 2, 0).cpu().numpy()
+            if img.max() <= 1.0:
+                img = (img * 255).astype(np.uint8)
+
+            # make blue overlay (outside confidence)
+            overlay = img.copy()
+            blue = np.zeros_like(img)
+            blue[..., 2] = (conf_up * 255).astype(np.uint8)  # blue channel
+
+            alpha = 0.6
+            overlay = cv2.addWeighted(overlay, 1.0, blue, alpha, 0)
+
+            return overlay
+
         loss, acc, loss_dict = calculate_loss(
             proto_features_bal, proto_features_ds_bal, pooled,
             hflip1, hflip2, out, ys,
@@ -415,9 +460,36 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         B2 = proto_features.shape[0] // 2
         print("B arg:", B, "B2:", B2)
         print("mask_view2_grid:", mask_view2_grid.shape, mask_view2_grid.dtype)
-        # compute penalty on the SAME maps you train with
-        pen_big = outside_soft_suppression(proto_features[B:], mask_view2_grid, power=2.0)
-        pen_ds = outside_soft_suppression(proto_features_ds[B:], mask_view2_grid_ds, power=2.0)
+        B2 = proto_features.shape[0] // 2
+
+        # compute penalty on SAME maps you train with
+        pen_big = outside_soft_suppression(
+            proto_features[B2:], mask_view2_grid, power=2.0
+        )
+        pen_ds = outside_soft_suppression(
+            proto_features_ds[B2:], mask_view2_grid_ds, power=2.0
+        )
+
+        outside_pen = pen_big + pen_ds
+
+        # ---- choose example from view2 ----
+        img0 = xs2[0].detach().cpu()  # image from view2
+        proto0 = proto_features[B2 + 0].detach()  # matching proto map
+        mask0 = mask_view2_grid[0].detach()  # matching mask
+
+        overlay_out = overlay_outside_conf_on_image(
+            img0, proto0, mask0
+        )
+
+        # ---- log (main process only if using DDP/accelerate) ----
+        wandb.log(
+            {
+                f"{phase}/outside_pen": float(outside_pen.detach()),
+                f"viz/mask_overlay_with_outside_conf_{phase}":
+                    wandb.Image(overlay_out, caption="Blue = outside activation"),
+            },
+            step=global_step
+        )
 
         outside_pen = pen_big + pen_ds
 
