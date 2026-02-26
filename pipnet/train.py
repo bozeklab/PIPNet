@@ -12,6 +12,95 @@ from PIL import Image
 import torch
 
 
+def sinkhorn_balance_probs_in_mask(
+    Q: torch.Tensor,             # [B, D, H, W] probs (already softmax)
+    mask: torch.Tensor,          # [B, H, W] bool
+    *,
+    n_iters: int = 5,
+    eps: float = 1e-6,
+    momentum: float = 0.0,       # 0 = replace by balanced; >0 = EMA mix with original
+    k_active: int = None, # if None, choose automatically per mask
+    min_k: int = 2,
+    max_k: int = 10,    # if None, max_k = D
+    pixels_per_proto: int = 64,  # auto K ≈ N_mask / pixels_per_proto
+):
+    """
+    Rebalances prototype usage inside the mask.
+    Works on probabilities (no logits). Output is still per-pixel probs.
+
+    Returns:
+      Q_out: [B, D, H, W]
+    """
+    assert Q.ndim == 4
+    B, D, H, W = Q.shape
+    assert mask.shape == (B, H, W) and mask.dtype == torch.bool
+
+    N = H * W
+    Qn = Q.permute(0, 2, 3, 1).reshape(B, N, D).clamp_min(eps)  # [B,N,D]
+    M  = mask.reshape(B, N)                                      # [B,N]
+
+    Q_out = Qn.clone()
+
+    if max_k is None:
+        max_k = D
+
+    for b in range(B):
+        mb = M[b]
+        n_mask = int(mb.sum().item())
+        if n_mask == 0:
+            continue
+
+        A0 = Qn[b, mb, :]  # [N_mask, D]
+        A0 = A0 / (A0.sum(dim=1, keepdim=True) + eps)  # row-stochastic
+
+        # choose K prototypes to balance inside this mask
+        if k_active is None:
+            K = max(min_k, min(max_k, n_mask // pixels_per_proto))
+            K = min(K, D)
+        else:
+            K = max(min_k, min(max_k, k_active))
+            K = min(K, D)
+
+        if K < D:
+            mass = A0.sum(dim=0)                      # [D]
+            topk = torch.topk(mass, k=K, largest=True).indices
+            A = A0[:, topk]                           # [N_mask, K]
+        else:
+            topk = None
+            A = A0                                    # [N_mask, D]
+
+        # Explicit column target mass (uniform over active prototypes)
+        # Total mass per iteration is ~N_mask because rows sum to 1.
+        target_col = A.sum() / A.shape[1]             # scalar
+
+        for _ in range(n_iters):
+            # row normalize (keep per-pixel distribution)
+            A = A / (A.sum(dim=1, keepdim=True) + eps)
+
+            # column scaling to hit uniform target
+            col = A.sum(dim=0, keepdim=True) + eps    # [1,K] or [1,D]
+            A = A * (target_col / col)
+
+        # final row normalize for clean probs
+        A = A / (A.sum(dim=1, keepdim=True) + eps)
+
+        # put back into full D
+        if topk is not None:
+            A_full = torch.zeros_like(A0)
+            A_full[:, topk] = A
+            A_full = A_full / (A_full.sum(dim=1, keepdim=True) + eps)
+        else:
+            A_full = A
+
+        if momentum > 0.0:
+            A_full = momentum * A0 + (1.0 - momentum) * A_full
+            A_full = A_full / (A_full.sum(dim=1, keepdim=True) + eps)
+
+        Q_out[b, mb, :] = A_full
+
+    return Q_out.view(B, H, W, D).permute(0, 3, 1, 2)
+
+
 def clustering_loss_from_sinkhorn_target(
     P: torch.Tensor,            # [B,D,H,W] probs (softmax)
     mask: torch.Tensor,         # [B,H,W] bool
