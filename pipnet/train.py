@@ -12,94 +12,58 @@ from PIL import Image
 import torch
 
 
-def sinkhorn_balance_probs_in_mask(
-    Q: torch.Tensor,             # [B, D, H, W] probs (already softmax)
-    mask: torch.Tensor,          # [B, H, W] bool
+def clustering_loss_from_sinkhorn_target(
+    P: torch.Tensor,            # [B,D,H,W] probs (softmax)
+    mask: torch.Tensor,         # [B,H,W] bool
+    sinkhorn_fn,                # sinkhorn_balance_probs_in_mask
     *,
     n_iters: int = 5,
     eps: float = 1e-6,
-    momentum: float = 0.0,       # 0 = replace by balanced; >0 = EMA mix with original
-    k_active: int = None, # if None, choose automatically per mask
-    min_k: int = 2,
-    max_k: int = 10,    # if None, max_k = D
-    pixels_per_proto: int = 64,  # auto K ≈ N_mask / pixels_per_proto
+    tau_pred: float = 1.0,      # optional sharpening on P (1.0 = none)
+    lam: float = 1.0,
+    **sinkhorn_kwargs
 ):
     """
-    Rebalances prototype usage inside the mask.
-    Works on probabilities (no logits). Output is still per-pixel probs.
-
-    Returns:
-      Q_out: [B, D, H, W]
+    Enforce clustering by matching network probs P to a balanced Sinkhorn target (detached).
+    Applies loss only inside mask.
     """
-    assert Q.ndim == 4
-    B, D, H, W = Q.shape
-    assert mask.shape == (B, H, W) and mask.dtype == torch.bool
+    assert P.ndim == 4
+    B, D, H, W = P.shape
+    assert mask.shape == (B, H, W)
 
-    N = H * W
-    Qn = Q.permute(0, 2, 3, 1).reshape(B, N, D).clamp_min(eps)  # [B,N,D]
-    M  = mask.reshape(B, N)                                      # [B,N]
+    # Optional: sharpen or soften P before loss (helps if P is too flat)
+    if tau_pred != 1.0:
+        logits = (P.clamp_min(eps)).log()
+        P_use = F.softmax(logits / tau_pred, dim=1)
+    else:
+        P_use = P
 
-    Q_out = Qn.clone()
+    # ---- target assignment (no grad) ----
+    with torch.no_grad():
+        Q_tgt = sinkhorn_fn(
+            P_use, mask,
+            n_iters=n_iters,
+            momentum=0.0,   # IMPORTANT: create a real balanced target
+            eps=eps,
+            **sinkhorn_kwargs
+        ).clamp_min(eps)
 
-    if max_k is None:
-        max_k = D
+    # ---- KL(P || Q) inside mask ----
+    # Flatten spatial dims
+    Pn = P_use.permute(0, 2, 3, 1).reshape(B, H * W, D)
+    Qn = Q_tgt.permute(0, 2, 3, 1).reshape(B, H * W, D)
+    Mn = mask.reshape(B, H * W).float()
 
-    for b in range(B):
-        mb = M[b]
-        n_mask = int(mb.sum().item())
-        if n_mask == 0:
-            continue
+    # Cross-entropy with soft targets: - sum_d Q * log P
+    logP = (Pn.clamp_min(eps)).log()
+    ce = -(Qn * logP).sum(dim=-1)  # [B, N]
 
-        A0 = Qn[b, mb, :]  # [N_mask, D]
-        A0 = A0 / (A0.sum(dim=1, keepdim=True) + eps)  # row-stochastic
+    # mask-average (avoid size bias)
+    denom = Mn.sum(dim=1).clamp_min(1.0)  # [B]
+    per_img = (ce * Mn).sum(dim=1) / denom
+    loss_cluster = per_img.mean()
 
-        # choose K prototypes to balance inside this mask
-        if k_active is None:
-            K = max(min_k, min(max_k, n_mask // pixels_per_proto))
-            K = min(K, D)
-        else:
-            K = max(min_k, min(max_k, k_active))
-            K = min(K, D)
-
-        if K < D:
-            mass = A0.sum(dim=0)                      # [D]
-            topk = torch.topk(mass, k=K, largest=True).indices
-            A = A0[:, topk]                           # [N_mask, K]
-        else:
-            topk = None
-            A = A0                                    # [N_mask, D]
-
-        # Explicit column target mass (uniform over active prototypes)
-        # Total mass per iteration is ~N_mask because rows sum to 1.
-        target_col = A.sum() / A.shape[1]             # scalar
-
-        for _ in range(n_iters):
-            # row normalize (keep per-pixel distribution)
-            A = A / (A.sum(dim=1, keepdim=True) + eps)
-
-            # column scaling to hit uniform target
-            col = A.sum(dim=0, keepdim=True) + eps    # [1,K] or [1,D]
-            A = A * (target_col / col)
-
-        # final row normalize for clean probs
-        A = A / (A.sum(dim=1, keepdim=True) + eps)
-
-        # put back into full D
-        if topk is not None:
-            A_full = torch.zeros_like(A0)
-            A_full[:, topk] = A
-            A_full = A_full / (A_full.sum(dim=1, keepdim=True) + eps)
-        else:
-            A_full = A
-
-        if momentum > 0.0:
-            A_full = momentum * A0 + (1.0 - momentum) * A_full
-            A_full = A_full / (A_full.sum(dim=1, keepdim=True) + eps)
-
-        Q_out[b, mb, :] = A_full
-
-    return Q_out.view(B, H, W, D).permute(0, 3, 1, 2)
-
+    return lam * loss_cluster, Q_tgt
 
 def create_proto_legend(colors, proto_ids=None, max_items=25):
     """
@@ -249,30 +213,34 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         visible_mask_ds = torch.cat([mask_view1_grid_ds, mask_view2_grid_ds], dim=0)  # [2B,grid_h_ds,grid_w_ds]
 
         # ---- apply balancing on BOTH scales ----
-        proto_features_bal = sinkhorn_balance_probs_in_mask(
+        loss_cl_big, Q_big_tgt = clustering_loss_from_sinkhorn_target(
             proto_features, visible_mask_big,
+            sinkhorn_balance_probs_in_mask,
             n_iters=5,
-            momentum=1.0,
+            lam=1.0,  # tune this
+            max_k=10,  # keep your settings
+            pixels_per_proto=64
         )
 
-        proto_features_ds_bal = sinkhorn_balance_probs_in_mask(
+        loss_cl_ds, Q_ds_tgt = clustering_loss_from_sinkhorn_target(
             proto_features_ds, visible_mask_ds,
+            sinkhorn_balance_probs_in_mask,
             n_iters=5,
-            momentum=1.0,
+            lam=1.0,
+            max_k=10,
+            pixels_per_proto=64
         )
 
+        lam_cluster = 0.1  # start 0.01–0.1
         # ---- recompute pooled/out so loss sees the balanced maps ----
-        pooled_big = net.module._pool(proto_features_bal).flatten(1)  # [2B, D]
-        pooled_ds = net.module._pool(proto_features_ds_bal).flatten(1)  # [2B, D]
-        pooled = torch.cat([pooled_big, pooled_ds], dim=1)  # [2B, 2D]
-        out = net.module._classification(pooled)
+
         log_every = 10
         if wandb.run is not None and (i % log_every == 0 or i == 0):
             bs = xs1.shape[0]
             max_images = min(2, bs)
 
             # proto_features assumed shape: (2*B, P, h, w) corresponding to cat([xs1, xs2])
-            pf_xs2 = proto_features_bal[bs:]  # corresponds to xs2 (view 2)
+            pf_xs2 = proto_features[bs:]  # corresponds to xs2 (view 2)
 
             examples_original = []
             examples_overlay = []
@@ -460,7 +428,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             return overlay
 
         loss, acc, loss_dict = calculate_loss(
-            proto_features_bal, proto_features_ds_bal, pooled,
+            proto_features, proto_features_ds, pooled,
             hflip1, hflip2, out, ys,
             align_pf_weight, t_weight, unif_weight, cl_weight,
             net.module._classification.normalization_multiplier,
@@ -517,10 +485,11 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         outside_pen = pen_big + pen_ds
 
         lambda_out = 50.0  # start 1e-3..1e-2
-        loss = loss + lambda_out * outside_pen
+        loss = loss + lambda_out * outside_pen + lam_cluster * (loss_cl_big + loss_cl_ds)
         # optional logging
         loss_dict = dict(loss_dict)  # ensures it's a plain mutable dict
         loss_dict[f"{phase}/outside_pen"] = outside_pen.item()  # use item() for W&B safety
+        loss_dict[f"{phase}/cluster"] = (loss_cl_big + loss_cl_ds).item()
         loss_dict[f"{phase}/loss_total"] = loss.item()
         loss_dict["global_step"] = global_step_offset + i
 
