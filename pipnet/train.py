@@ -301,23 +301,33 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
         visible_mask_ds = torch.cat([mask_view1_grid_ds, mask_view2_grid_ds], dim=0)  # [2B,grid_h_ds,grid_w_ds]
 
-        # ---- apply balancing on BOTH scales ----
-        loss_cl_big, Q_big_tgt = clustering_loss_from_sinkhorn_target(
-            proto_features, visible_mask_big,
-            sinkhorn_balance_probs_in_mask,
-            n_iters=5,
-            lam=1.0,  # tune this
-            max_k=10,  # keep your settings
-            pixels_per_proto=64
-        )
+        batch_size = xs1.shape[0]  # B
+        zeros_big = torch.zeros_like(mask_view1_grid)  # [B,grid_h,grid_w]
+        zeros_ds = torch.zeros_like(mask_view1_grid_ds)  # [B,grid_h_ds,grid_w_ds]
 
-        loss_cl_ds, Q_ds_tgt = clustering_loss_from_sinkhorn_target(
-            proto_features_ds, visible_mask_ds,
+        # only visible = view2 mask (view1 disabled)
+        visible_mask_big_only = torch.cat([zeros_big, mask_view2_grid], dim=0)  # [2B,grid_h,grid_w]
+        visible_mask_ds_only = torch.cat([zeros_ds, mask_view2_grid_ds], dim=0)  # [2B,grid_h_ds,grid_w_ds]
+
+        # ---- apply clustering loss on BOTH scales (view2 only) ----
+        loss_cl_big, Q_big_tgt = clustering_loss_from_sinkhorn_target(
+            proto_features, visible_mask_big_only,
             sinkhorn_balance_probs_in_mask,
             n_iters=5,
             lam=1.0,
             max_k=10,
-            pixels_per_proto=64
+            pixels_per_proto=16,  # token-grid friendly; 64 usually makes K too small
+            momentum=0.0  # IMPORTANT: real target
+        )
+
+        loss_cl_ds, Q_ds_tgt = clustering_loss_from_sinkhorn_target(
+            proto_features_ds, visible_mask_ds_only,
+            sinkhorn_balance_probs_in_mask,
+            n_iters=5,
+            lam=1.0,
+            max_k=10,
+            pixels_per_proto=16,
+            momentum=0.0
         )
 
         lam_cluster = 0.1  # start 0.01–0.1
