@@ -402,23 +402,22 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             return per_img.mean()
 
         @torch.no_grad()
-        def overlay_inside_outside_conf_on_image(
-                img_tensor,
-                proto_features,
-                visible_mask,
-                tau=0.2,
-                eps=1e-6,
+        def overlay_topk_inside_outside_real(
+                img_tensor,  # [3, H_img, W_img]
+                proto_features,  # [D, H_tok, W_tok] (probabilities)
+                visible_mask,  # [H_tok, W_tok] bool
+                k=3,
+                alpha=0.5
         ):
             """
-            Blue  = outside confidence
-            Red   = inside confidence
+            Red  = top-k activation inside mask
+            Blue = top-k activation outside mask
+            Overlayed on real image.
             """
 
-            # --- smooth confidence map ---
-            conf = tau * torch.logsumexp(
-                (proto_features.clamp_min(eps)).log() / tau,
-                dim=0
-            )  # [H_tok, W_tok]
+            # --- compute top-k summed activation ---
+            topk_vals = torch.topk(proto_features, k=k, dim=0).values  # [k,H,W]
+            conf = topk_vals.sum(dim=0)  # [H_tok,W_tok]
 
             inside = visible_mask
             outside = ~visible_mask
@@ -426,15 +425,10 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             conf_in = conf * inside
             conf_out = conf * outside
 
-            # normalize independently for visualization
-            def normalize(x):
-                x = x - x.min()
-                if x.max() > 0:
-                    x = x / x.max()
-                return x
-
-            conf_in = normalize(conf_in)
-            conf_out = normalize(conf_out)
+            # --- global normalization ---
+            max_val = conf.max().clamp_min(1e-6)
+            conf_in = conf_in / max_val
+            conf_out = conf_out / max_val
 
             conf_in_np = conf_in.cpu().numpy()
             conf_out_np = conf_out.cpu().numpy()
@@ -444,21 +438,24 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             conf_in_up = cv2.resize(conf_in_np, (W_img, H_img), interpolation=cv2.INTER_NEAREST)
             conf_out_up = cv2.resize(conf_out_np, (W_img, H_img), interpolation=cv2.INTER_NEAREST)
 
-            # --- base image ---
+            # --- convert real image ---
             img = img_tensor.permute(1, 2, 0).cpu().numpy()
             if img.max() <= 1.0:
-                img = (img * 255).astype(np.uint8)
+                img = img * 255
+            img = img.astype(np.uint8)
 
             overlay = img.copy()
 
-            # 🔴 Red channel = inside
-            # 🔵 Blue channel = outside
-            red_blue = np.zeros_like(img)
-            red_blue[..., 0] = (conf_in_up * 255).astype(np.uint8)  # red
-            red_blue[..., 2] = (conf_out_up * 255).astype(np.uint8)  # blue
+            # --- build color heatmap ---
+            heatmap = np.zeros_like(img, dtype=np.float32)
+            heatmap[..., 0] = conf_in_up  # red
+            heatmap[..., 2] = conf_out_up  # blue
 
-            alpha = 0.6
-            overlay = cv2.addWeighted(overlay, 1.0, red_blue, alpha, 0)
+            # scale to 0–255
+            heatmap = (heatmap * 255).astype(np.uint8)
+
+            # --- blend with original image ---
+            overlay = cv2.addWeighted(img, 1.0, heatmap, alpha, 0)
 
             return overlay
 
@@ -494,16 +491,25 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         proto0 = proto_features[B2 + 0].detach()  # matching proto map
         mask0 = mask_view2_grid[0].detach()  # matching mask
 
-        overlay_out = overlay_inside_outside_conf_on_image(
-            img0, proto0, mask0
+        overlay_img = overlay_topk_inside_outside_real(
+            img0,
+            proto0,
+            mask0,
+            k=3,
+            alpha=0.6
         )
 
+        wandb.log(
+            {
+                f"viz/topk_inside_outside_real_{phase}":
+                    wandb.Image(overlay_img, caption="Red=inside, Blue=outside (top-k)")
+            },
+            step=global_step
+        )
         # ---- log (main process only if using DDP/accelerate) ----
         wandb.log(
             {
                 f"{phase}/outside_pen": float(outside_pen.detach()),
-                f"viz/mask_overlay_with_outside_conf_{phase}":
-                    wandb.Image(overlay_out, caption="Blue = outside activation"),
             },
             step=global_step
         )
