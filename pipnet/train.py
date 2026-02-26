@@ -516,7 +516,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
 
         outside_pen = pen_big + pen_ds
 
-        lambda_out = 10.0  # start 1e-3..1e-2
+        lambda_out = 100.0  # start 1e-3..1e-2
         loss = loss + lambda_out * outside_pen
         # optional logging
         loss_dict = dict(loss_dict)  # ensures it's a plain mutable dict
