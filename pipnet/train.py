@@ -328,7 +328,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             pixels_per_proto=16,
         )
 
-        lam_cluster = 0.1  # start 0.01–0.1
+        lam_cluster = 0.5  # start 0.01–0.1
         # ---- recompute pooled/out so loss sees the balanced maps ----
 
         log_every = 10
