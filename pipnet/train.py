@@ -317,7 +317,6 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             lam=1.0,
             max_k=10,
             pixels_per_proto=16,  # token-grid friendly; 64 usually makes K too small
-            momentum=0.0  # IMPORTANT: real target
         )
 
         loss_cl_ds, Q_ds_tgt = clustering_loss_from_sinkhorn_target(
@@ -327,7 +326,6 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             lam=1.0,
             max_k=10,
             pixels_per_proto=16,
-            momentum=0.0
         )
 
         lam_cluster = 0.1  # start 0.01–0.1
