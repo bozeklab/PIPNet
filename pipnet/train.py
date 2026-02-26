@@ -20,7 +20,7 @@ def sinkhorn_balance_probs_in_mask(
     momentum: float = 0.0,       # 0 = replace by balanced; >0 = EMA mix with original
     k_active: int = None, # if None, choose automatically per mask
     min_k: int = 2,
-    max_k: int = None,    # if None, max_k = D
+    max_k: int = 10,    # if None, max_k = D
     pixels_per_proto: int = 64,  # auto K ≈ N_mask / pixels_per_proto
 ):
     """
