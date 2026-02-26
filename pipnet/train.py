@@ -494,7 +494,7 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         proto0 = proto_features[B2 + 0].detach()  # matching proto map
         mask0 = mask_view2_grid[0].detach()  # matching mask
 
-        overlay_out = overlay_outside_conf_on_image(
+        overlay_out = overlay_inside_outside_conf_on_image(
             img0, proto0, mask0
         )
 
