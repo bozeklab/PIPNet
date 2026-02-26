@@ -251,13 +251,13 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         proto_features_bal = sinkhorn_balance_probs_in_mask(
             proto_features, visible_mask_big,
             n_iters=5,
-            momentum=0.9,
+            momentum=1.0,
         )
 
         proto_features_ds_bal = sinkhorn_balance_probs_in_mask(
             proto_features_ds, visible_mask_ds,
             n_iters=5,
-            momentum=0.9,
+            momentum=1.0,
         )
 
         # ---- recompute pooled/out so loss sees the balanced maps ----
@@ -424,8 +424,8 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
         B = xs1.shape[0]  # batch size of one view
 
         # compute penalty on the SAME maps you train with
-        pen_big = outside_soft_suppression(proto_features_bal[B:], mask_view2_grid, power=2.0)
-        pen_ds = outside_soft_suppression(proto_features_ds_bal[B:], mask_view2_grid_ds, power=2.0)
+        pen_big = outside_soft_suppression(proto_features[B:], mask_view2_grid, power=2.0)
+        pen_ds = outside_soft_suppression(proto_features_ds[B:], mask_view2_grid_ds, power=2.0)
 
         outside_pen = pen_big + pen_ds
 
