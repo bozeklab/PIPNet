@@ -334,6 +334,15 @@ def run_pipnet(args=None):
                   "are set to zero (mostly background)", flush=True)
         #topks = visualize_topk(net, projectloader, len(classes), device, 'visualised_prototypes_topk_nobck', args, compute_jaccard=True)
         eval_info = eval_pipnet(net, testloader, "notused_bg" + str(args.epochs), device, log)
+        wandb.log({
+            "epoch": args.epochs,
+            "eval/top1_accuracy": eval_info['top1_accuracy'],
+            "eval/top5_accuracy": eval_info['top5_accuracy'],
+            "eval/almost_sim_nonzeros": eval_info['almost_sim_nonzeros'],
+            "eval/local_size_all_classes": eval_info['local_size_all_classes'],
+            "eval/almost_nonzeros": eval_info['almost_nonzeros'],
+            "eval/num_non_zero_prototypes": eval_info['num non-zero prototypes'],
+        })
         log.log_values('log_epoch_overview', "notused_bg" + str(args.epochs), eval_info['top1_accuracy'],
                        eval_info['top5_accuracy'], eval_info['almost_sim_nonzeros'],
                        eval_info['local_size_all_classes'], eval_info['almost_nonzeros'],
