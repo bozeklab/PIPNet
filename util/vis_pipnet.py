@@ -17,7 +17,7 @@ from util.func import get_patch_size
 import random
 
 @torch.no_grad()                    
-def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=5, compute_jaccard=False):
+def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=5, compute_jaccard=True):
     print("Visualizing prototypes for topk...", flush=True)
     dir = os.path.join(args.log_dir, foldername)
     if not os.path.exists(dir):

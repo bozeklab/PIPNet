@@ -402,46 +402,63 @@ def train_pipnet(net, train_loader, optimizer_net, optimizer_classifier, schedul
             return per_img.mean()
 
         @torch.no_grad()
-        def overlay_outside_conf_on_image(img_tensor, proto_features, visible_mask,
-                                          tau=0.2, eps=1e-6):
+        def overlay_inside_outside_conf_on_image(
+                img_tensor,
+                proto_features,
+                visible_mask,
+                tau=0.2,
+                eps=1e-6,
+        ):
             """
-            img_tensor:      [3,H_img,W_img] (0-1 or 0-255)
-            proto_features:  [D,H_tok,W_tok]
-            visible_mask:    [H_tok,W_tok] bool
+            Blue  = outside confidence
+            Red   = inside confidence
             """
 
-            # --- compute smooth max confidence ---
+            # --- smooth confidence map ---
             conf = tau * torch.logsumexp(
                 (proto_features.clamp_min(eps)).log() / tau,
                 dim=0
-            )  # [H_tok,W_tok]
+            )  # [H_tok, W_tok]
 
-            outside = (~visible_mask)
+            inside = visible_mask
+            outside = ~visible_mask
+
+            conf_in = conf * inside
             conf_out = conf * outside
 
-            # normalize for display
-            conf_out = conf_out - conf_out.min()
-            if conf_out.max() > 0:
-                conf_out = conf_out / conf_out.max()
+            # normalize independently for visualization
+            def normalize(x):
+                x = x - x.min()
+                if x.max() > 0:
+                    x = x / x.max()
+                return x
 
-            conf_np = conf_out.cpu().numpy()
+            conf_in = normalize(conf_in)
+            conf_out = normalize(conf_out)
 
-            # upsample to image resolution
+            conf_in_np = conf_in.cpu().numpy()
+            conf_out_np = conf_out.cpu().numpy()
+
+            # --- upsample to image resolution ---
             H_img, W_img = img_tensor.shape[1:]
-            conf_up = cv2.resize(conf_np, (W_img, H_img), interpolation=cv2.INTER_NEAREST)
+            conf_in_up = cv2.resize(conf_in_np, (W_img, H_img), interpolation=cv2.INTER_NEAREST)
+            conf_out_up = cv2.resize(conf_out_np, (W_img, H_img), interpolation=cv2.INTER_NEAREST)
 
-            # convert image to numpy
+            # --- base image ---
             img = img_tensor.permute(1, 2, 0).cpu().numpy()
             if img.max() <= 1.0:
                 img = (img * 255).astype(np.uint8)
 
-            # make blue overlay (outside confidence)
             overlay = img.copy()
-            blue = np.zeros_like(img)
-            blue[..., 2] = (conf_up * 255).astype(np.uint8)  # blue channel
+
+            # 🔴 Red channel = inside
+            # 🔵 Blue channel = outside
+            red_blue = np.zeros_like(img)
+            red_blue[..., 0] = (conf_in_up * 255).astype(np.uint8)  # red
+            red_blue[..., 2] = (conf_out_up * 255).astype(np.uint8)  # blue
 
             alpha = 0.6
-            overlay = cv2.addWeighted(overlay, 1.0, blue, alpha, 0)
+            overlay = cv2.addWeighted(overlay, 1.0, red_blue, alpha, 0)
 
             return overlay
 
