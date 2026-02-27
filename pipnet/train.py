@@ -525,7 +525,7 @@ def train_pipnet(
         global_step = global_step_base + (epoch - 1) * len(train_loader) + i
         phase = "pretrain" if pretrain else ("finetune" if finetune else "train")
 
-        loss_dict = dict(loss_dict)Ï
+        loss_dict = dict(loss_dict)
         loss_dict[f"{phase}/outside_pen"] = float(outside_pen.detach())
         loss_dict[f"{phase}/cluster"] = float(loss_cl_big.detach())
         loss_dict[f"{phase}/loss_total_full"] = float(loss.detach())
