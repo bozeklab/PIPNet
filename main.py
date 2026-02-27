@@ -153,7 +153,7 @@ def run_pipnet(args=None):
         args.wshape = wshape
         #args.wshape_ds = wshape_ds  # needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
-        print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
+        #print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
 
     if net.module._num_classes == 2:
         # Create a csv log for storing the test accuracy, F1-score, mean train accuracy and mean loss for each epoch
