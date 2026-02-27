@@ -30,7 +30,7 @@ ls -l "$PY"
   --epochs_pretrain 0 \
   --batch_size 16 \
   --freeze_epochs 10 \
-  --remove_bg_fraction 0.0 \
+  --remove_bg_fraction 0.3 \
   --log_dir ./runs/paper_runs/mito_convnext_tiny_2img_vit \
   --image_size 448 \
   --num_features 256 \
