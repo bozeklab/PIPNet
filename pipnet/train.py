@@ -517,7 +517,7 @@ def train_pipnet(
 
         # Weights (tune carefully; start small and ramp if needed)
         lam_cluster = 5.0
-        lambda_out = 50.0
+        lambda_out = 100.0
 
         loss = loss + lambda_out * outside_pen + lam_cluster * loss_cl_big
 
