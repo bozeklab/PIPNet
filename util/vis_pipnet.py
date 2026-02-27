@@ -6,546 +6,502 @@ import torch.nn.functional as F
 import torch.utils.data
 import cv2
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 from PIL import Image, ImageDraw as D
 import torchvision.transforms as transforms
 import torchvision
-
-from util.data import create_boolean_mask
-from util.func import get_patch_size
 import random
 
-@torch.no_grad()                    
-def visualize_topk(net, projectloader, num_classes, device, foldername, args: argparse.Namespace, k=5, compute_jaccard=True):
-    print("Visualizing prototypes for topk...", flush=True)
-    dir = os.path.join(args.log_dir, foldername)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+from util.data import create_boolean_mask
+# from util.func import get_patch_size  # DS-aware; we avoid it in single-scale
 
-    near_imgs_dirs = dict()
-    seen_max = dict()
-    saved = dict()
-    saved_ys = dict()
-    tensors_per_prototype = dict()
 
-    m_jaccard = []
-    
-    for p in range(net.module._num_prototypes):
-        near_imgs_dir = os.path.join(dir, str(p))
-        near_imgs_dirs[p]=near_imgs_dir
-        seen_max[p]=0.
-        saved[p]=0
-        saved_ys[p]=[]
-        tensors_per_prototype[p]=[]
+def get_patch_size_single(args: argparse.Namespace, proto_features_hw, img_size: int):
+    """
+    Single-scale patch geometry for ViT-like grids.
 
-    imgs = projectloader.dataset.imgs
+    proto_features_hw: (Hf, Wf) of proto map for one prototype (e.g. 16x16)
+    img_size: image resolution used in visualization (args.image_size)
+
+    Returns:
+      patchsize_px, skip_px
+    """
+    Hf, Wf = proto_features_hw
+    # assume square grid and square image
+    # "cell" in pixels
+    cell_h = img_size // Hf
+    cell_w = img_size // Wf
+    # for ViT patch embeddings, cell_h==cell_w==patch_size, but this works generally.
+    patchsize = min(cell_h, cell_w)
+    skip = patchsize
+    return patchsize, skip
+
+
+def build_masks_list_from_imgs(imgs):
+    """
+    Your dataset stores image paths in projectloader.dataset.imgs, but you build mask paths by
+    prefixing 'mask_' to the filename.
+
+    imgs: list of (img_path, target) or img_path
+    returns: list of (mask_path, target) tuples aligned with imgs indices
+    """
     masks = []
-    for i in imgs:
-        mask_path, target = i
+    for item in imgs:
+        mask_path, target = item
         directory, filename = os.path.split(mask_path)
         name, extension = os.path.splitext(filename)
-        new_maskname = 'mask_' + name + extension
+        new_maskname = "mask_" + name + extension
         new_mask_path = os.path.join(directory, new_maskname)
         masks.append((new_mask_path, target))
+    return masks
 
-    
-    # Make sure the model is in evaluation mode
+
+@torch.no_grad()
+def visualize_topk(
+    net,
+    projectloader,
+    num_classes,
+    device,
+    foldername,
+    args: argparse.Namespace,
+    k=5,
+    compute_jaccard=True
+):
+    """
+    Single-scale top-k visualization:
+    - uses proto_features only
+    - pooled is [num_prototypes] (single scale)
+    - no DS prototypes and no half-split
+    """
+    print("Visualizing prototypes for topk (single-scale)...", flush=True)
+    out_dir = os.path.join(args.log_dir, foldername)
+    os.makedirs(out_dir, exist_ok=True)
+
+    P = net.module._num_prototypes
+    saved = {p: 0 for p in range(P)}
+    tensors_per_prototype = {p: [] for p in range(P)}
+    m_jaccard = []
+
+    imgs = projectloader.dataset.imgs
+    masks = build_masks_list_from_imgs(imgs)
+
     net.eval()
-    classification_weights = net.module._classification.weight
+    classification_weights = net.module._classification.weight  # [num_classes, P] (single scale)
 
-    # Show progress on progress bar
-    img_iter = tqdm(enumerate(projectloader),
-                    total=len(projectloader),
-                    mininterval=50.,
-                    desc='Collecting topk',
-                    ncols=0)
+    # Collect top-k indices per prototype by pooled score
+    img_iter = tqdm(
+        enumerate(projectloader),
+        total=len(projectloader),
+        mininterval=50.0,
+        desc="Collecting topk",
+        ncols=0,
+    )
 
-    # Iterate through the data
-    images_seen = 0
-    topks = dict()
-    # Iterate through the training set
+    topks = {}  # p -> list[(dataset_index, score)]
     for i, (xs, xs_ds, m, m_ds, ys) in img_iter:
-        images_seen+=1
-        xs, xs_ds, m, m_ds, ys = xs.to(device), xs_ds.to(device), m.to(device), m_ds.to(device),  ys.to(device)
+        xs = xs.to(device)
+        # xs_ds ignored
 
-        with torch.no_grad():
-            # Use the model to classify this batch of input data
-            pfs, _, pooled, _ = net(xs=xs, xs_ds=xs_ds, inference=True)
-            pooled = pooled.squeeze(0) 
-            pfs = pfs.squeeze(0)
+        proto_features, _, pooled, _out = net(xs=xs, xs_ds=xs_ds, inference=True)
+        pooled = pooled.squeeze(0)          # [P]
+        # proto_features = proto_features.squeeze(0)  # [P,Hf,Wf] (not needed here)
 
-            # pfs shape [256, 16, 16]
-            # pooled [256]
+        for p in range(P):
+            c_weight = torch.max(classification_weights[:, p])
+            if c_weight > 1e-3:  # ignore irrelevant prototypes
+                if p not in topks:
+                    topks[p] = []
+                score = pooled[p].item()
+                if len(topks[p]) < k:
+                    topks[p].append((i, score))
+                else:
+                    topks[p] = sorted(topks[p], key=lambda tup: tup[1], reverse=True)
+                    if topks[p][-1][1] < score:
+                        topks[p][-1] = (i, score)
+                    elif topks[p][-1][1] == score:
+                        if random.choice([0, 1]) == 1:
+                            topks[p][-1] = (i, score)
 
-            for p in range(pooled.shape[0]):
-                c_weight = torch.max(classification_weights[:,p]) 
-                if c_weight > 1e-3:#ignore prototypes that are not relevant to any class
-                    if p not in topks.keys():
-                        topks[p] = []
-                        
-                    if len(topks[p]) < k:
-                        topks[p].append((i, pooled[p].item()))
-                    else:
-                        topks[p] = sorted(topks[p], key=lambda tup: tup[1], reverse=True)
-                        if topks[p][-1][1] < pooled[p].item():
-                            topks[p][-1] = (i, pooled[p].item())
-                        if topks[p][-1][1] == pooled[p].item():
-                            # equal scores. randomly chose one (since dataset is not shuffled so latter images with same scores can now also get in topk).
-                            replace_choice = random.choice([0, 1])
-                            if replace_choice > 0:
-                                topks[p][-1] = (i, pooled[p].item())
-
+    # Determine which dataset indices we need to revisit
     alli = []
     prototypes_not_used = []
-    for p in topks.keys():
-        found = False
-        for idx, score in topks[p]:
-            alli.append(idx)
-            if score > 0.1:  #in case prototypes have fewer than k well-related patches
-                found = True
+    for p, lst in topks.items():
+        found = any(score > 0.1 for _, score in lst)
+        alli.extend([idx for idx, _ in lst])
         if not found:
             prototypes_not_used.append(p)
 
-    print(len(prototypes_not_used), "prototypes do not have any similarity score > 0.1. Will be ignored in visualisation.")
+    print(len(prototypes_not_used), "prototypes do not have any similarity score > 0.1. Will be ignored.")
+
     abstained = 0
-    # Show progress on progress bar
-    img_iter = tqdm(enumerate(projectloader),
-                    total=len(projectloader),
-                    mininterval=50.,
-                    desc='Visualizing topk',
-                    ncols=0)
-    for i, (xs, xs_ds, m, m_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
-        if i in alli:
-            xs, ys = xs.to(device), ys.to(device)
-            for p in topks.keys():
-                if p not in prototypes_not_used:
-                    for idx, score in topks[p]:
-                        if idx == i:
-                            # Use the model to classify this batch of input data
-                            with torch.no_grad():
-                                proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True) #softmaxes has shape (1, num_prototypes, W, H)
-                                outmax = torch.amax(out,dim=1)[0] #shape ([1]) because batch size of projectloader is 1
-                                if outmax.item() == 0.:
-                                    abstained+=1
+    img_iter = tqdm(
+        enumerate(projectloader),
+        total=len(projectloader),
+        mininterval=50.0,
+        desc="Visualizing topk",
+        ncols=0,
+    )
 
-                            if p >= net.module._num_prototypes // 2:
-                                img_size = args.image_size_ds
-                                softmaxes = proto_features_ds
-                                pidx = p - net.module._num_prototypes // 2
-                            else:
-                                img_size = args.image_size
-                                softmaxes = proto_features
-                                pidx = p
+    for i, (xs, xs_ds, m, m_ds, ys) in img_iter:
+        if i not in alli:
+            continue
 
-                            patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
+        xs = xs.to(device)
+        ys = ys.to(device)
 
-                            # Take the max per prototype.                             
-                            max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
-                            max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
-                            max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1) #shape (num_prototypes)
-                            
-                            c_weight = torch.max(classification_weights[:, pidx]) #ignore prototypes that are not relevant to any class
-                            if (c_weight > 1e-10) or ('pretrain' in foldername):
-                                
-                                h_idx = max_idx_per_prototype_h[pidx, max_idx_per_prototype_w[pidx]]
-                                w_idx = max_idx_per_prototype_w[pidx]
-                                
-                                img_to_open = imgs[i]
-                                mask_to_open = masks[i]
-                                if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
-                                    img_to_open = img_to_open[0]
+        proto_features, _, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
+        outmax = torch.amax(out, dim=1)[0].item()
+        if outmax == 0.0:
+            abstained += 1
 
-                                if isinstance(mask_to_open, tuple) or isinstance(mask_to_open, list): #dataset contains tuples of (img,label)
-                                    mask_to_open = mask_to_open[0]
-                                
-                                image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open))
-                                mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open))
-                                image = transforms.Grayscale(3)(image)
+        # single scale tensors
+        softmaxes = proto_features.squeeze(0)  # [P,Hf,Wf]
+        img_size = args.image_size
 
-                                img_tensor = transforms.ToTensor()(image).unsqueeze_(0) #shape (1, 3, h, w)
-                                msk_tensor = transforms.ToTensor()(mask)
-                                msk_tensor = create_boolean_mask(msk_tensor)
-                                h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape, patchsize, skip, h_idx, w_idx)
-                                img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                                msk_tensor_patch = msk_tensor[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                                num_white_pixels = torch.sum(msk_tensor_patch).item()
+        # precompute maxima maps for all prototypes
+        max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)   # [Hf,Wf], [Hf,Wf] over P? careful
+        # The above is wrong dimensionally because dim=0 collapses P.
+        # We need per-prototype max location:
+        # softmaxes[p] is [Hf,Wf], so do per-prototype:
+        max_per_prototype = softmaxes.view(P, -1).max(dim=1).values  # [P]
+        max_idx_flat = softmaxes.view(P, -1).max(dim=1).indices      # [P]
+        Hf, Wf = softmaxes.shape[1], softmaxes.shape[2]
+        max_h = (max_idx_flat // Wf).long()
+        max_w = (max_idx_flat % Wf).long()
 
-                                m_jaccard.append(num_white_pixels/(msk_tensor_patch.shape[0]*msk_tensor_patch.shape[1]))
+        patchsize, skip = get_patch_size_single(args, (Hf, Wf), img_size)
 
-                                # Count the number of white pixels
-                                #num_white_pixels = torch.sum(mask).item()
+        for p, lst in topks.items():
+            if p in prototypes_not_used:
+                continue
+            for idx, score in lst:
+                if idx != i:
+                    continue
 
-                                saved[p]+=1
-                                tensors_per_prototype[p].append(img_tensor_patch)
+                c_weight = torch.max(classification_weights[:, p])
+                if (c_weight <= 1e-10) and ("pretrain" not in foldername):
+                    continue
 
-    print("Abstained: ", abstained, flush=True)
-    if compute_jaccard:
+                h_idx = int(max_h[p].item())
+                w_idx = int(max_w[p].item())
+
+                img_to_open = imgs[i]
+                mask_to_open = masks[i]
+                if isinstance(img_to_open, (tuple, list)):
+                    img_to_open = img_to_open[0]
+                if isinstance(mask_to_open, (tuple, list)):
+                    mask_to_open = mask_to_open[0]
+
+                image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open))
+                mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open))
+                image = transforms.Grayscale(3)(image)
+
+                img_tensor = transforms.ToTensor()(image).unsqueeze(0)  # (1,3,H,W)
+                msk_tensor = transforms.ToTensor()(mask)
+                msk_tensor = create_boolean_mask(msk_tensor)
+
+                h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(
+                    img_size, (P, Hf, Wf), patchsize, skip, h_idx, w_idx
+                )
+                img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
+                msk_tensor_patch = msk_tensor[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
+                num_white_pixels = torch.sum(msk_tensor_patch).item()
+
+                m_jaccard.append(num_white_pixels / (msk_tensor_patch.numel()))
+                saved[p] += 1
+                tensors_per_prototype[p].append(img_tensor_patch)
+
+    print("Abstained:", abstained, flush=True)
+    if compute_jaccard and len(m_jaccard) > 0:
         import statistics
-        print('Jaccard: ', statistics.mean(m_jaccard))
+        print("Jaccard:", statistics.mean(m_jaccard))
+
     all_tensors = []
-    for p in range(net.module._num_prototypes):
-        if saved[p]>0:
-            # add text next to each topk-grid, to easily see which prototype it is
-            text = "P "+str(p)
-            txtimage = Image.new("RGB", (img_tensor_patch.shape[1],img_tensor_patch.shape[2]), (0, 0, 0))
+    for p in range(P):
+        if saved[p] > 0:
+            # add text tile
+            text = "P " + str(p)
+            # Use last patch shape to size text image
+            patch = tensors_per_prototype[p][-1]
+            txtimage = Image.new("RGB", (patch.shape[2], patch.shape[1]), (0, 0, 0))
             draw = D.Draw(txtimage)
-            draw.text((img_tensor_patch.shape[0]//2, img_tensor_patch.shape[1]//2), text, anchor='mm', fill="white")
+            draw.text((patch.shape[2] // 2, patch.shape[1] // 2), text, anchor="mm", fill="white")
             txttensor = transforms.ToTensor()(txtimage)
             tensors_per_prototype[p].append(txttensor)
-            # save top-k image patches in grid
+
             try:
-                for i in range(len(tensors_per_prototype[p])):
-                    print(tensors_per_prototype[p][i].shape)
-                grid = torchvision.utils.make_grid(tensors_per_prototype[p], nrow=k+1, padding=1)
-                torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_%s.png"%(str(p))))
-                if saved[p]>=k:
-                    all_tensors+=tensors_per_prototype[p]
+                grid = torchvision.utils.make_grid(tensors_per_prototype[p], nrow=k + 1, padding=1)
+                torchvision.utils.save_image(grid, os.path.join(out_dir, f"grid_topk_{p}.png"))
+                if saved[p] >= k:
+                    all_tensors += tensors_per_prototype[p]
             except Exception as e:
-                print(f"Something is wrong: {e}")
-    if len(all_tensors)>0:
-        grid = torchvision.utils.make_grid(all_tensors, nrow=k+1, padding=1)
-        torchvision.utils.save_image(grid,os.path.join(dir,"grid_topk_all.png"))
+                print(f"Something is wrong for prototype {p}: {e}")
+
+    if len(all_tensors) > 0:
+        grid = torchvision.utils.make_grid(all_tensors, nrow=k + 1, padding=1)
+        torchvision.utils.save_image(grid, os.path.join(out_dir, "grid_topk_all.png"))
     else:
-        print("Pretrained prototypes not visualized. Try to pretrain longer.", flush=True)
+        print("No top-k grids saved. Try longer pretraining.", flush=True)
+
     return topks
 
 
 def remove_background(net, projectloader, num_classes, device, args: argparse.Namespace):
-    print("Removing background prototypes...", flush=True)
+    """
+    Single-scale background estimation.
+    Returns fraction of FG patches per prototype.
+    """
+    print("Removing background prototypes (single-scale)...", flush=True)
 
-    seen_max = dict()
-    fg_patches_per_prototype = dict()
-
-    for p in range(net.module._num_prototypes):
-        seen_max[p] = 0.
-        fg_patches_per_prototype[p] = []
+    P = net.module._num_prototypes
+    seen_max = {p: 0.0 for p in range(P)}
+    fg_patches_per_prototype = {p: [] for p in range(P)}
 
     imgs = projectloader.dataset.imgs
-    masks = []
-    for i in imgs:
-        mask_path, target = i
-        directory, filename = os.path.split(mask_path)
-        name, extension = os.path.splitext(filename)
-        new_maskname = 'mask_' + name + extension
-        new_mask_path = os.path.join(directory, new_maskname)
-        masks.append((new_mask_path, target))
+    masks = build_masks_list_from_imgs(imgs)
 
-    # Make sure the model is in evaluation mode
     net.eval()
     classification_weights = net.module._classification.weight
-    # Show progress on progress bar
-    img_iter = tqdm(enumerate(projectloader),
-                    total=len(projectloader),
-                    mininterval=100.,
-                    desc='Removing background prototypes',
-                    ncols=0)
 
-    # Iterate through the data
+    img_iter = tqdm(
+        enumerate(projectloader),
+        total=len(projectloader),
+        mininterval=100.0,
+        desc="Removing background prototypes",
+        ncols=0,
+    )
+
     images_seen_before = 0
-    for i, (xs, xs_ds, m, m_ds, ys) in img_iter:  # shuffle is false so should lead to same order as in imgs
-        xs, xs_ds, m, m_ds, ys = xs.to(device), xs_ds.to(device), m.to(device), m_ds.to(device), ys.to(device)
-        # Use the model to classify this batch of input data
-        with torch.no_grad():
-            proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
+    for i, (xs, xs_ds, m, m_ds, ys) in img_iter:
+        xs = xs.to(device)
+        ys = ys.to(device)
 
-        for p in range(0, net.module._num_prototypes):
-            patchsize, skip = get_patch_size(args, p, net.module._num_prototypes)
-            if p >= net.module._num_prototypes // 2:
-                img_size = args.image_size_ds
-                softmaxes = proto_features_ds
-                pidx = p - net.module._num_prototypes // 2
-            else:
-                img_size = args.image_size
-                softmaxes = proto_features
-                pidx = p
+        proto_features, _, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
+        softmaxes = proto_features.squeeze(0)  # [P,Hf,Wf]
+        Hf, Wf = softmaxes.shape[1], softmaxes.shape[2]
 
-            max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
-            # In PyTorch, images are represented as [channels, height, width]
-            max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
-            max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
+        img_size = args.image_size
+        patchsize, skip = get_patch_size_single(args, (Hf, Wf), img_size)
 
-            c_weight = torch.max(classification_weights[:, p])  # ignore prototypes that are not relevant to any class
-            if c_weight > 0:
-                h_idx = max_idx_per_prototype_h[pidx, max_idx_per_prototype_w[pidx]]
-                w_idx = max_idx_per_prototype_w[pidx]
-                idx_to_select = max_idx_per_prototype[pidx, h_idx, w_idx].item()
-                found_max = max_per_prototype[pidx, h_idx, w_idx].item()
+        # per-prototype peak
+        max_vals = softmaxes.view(P, -1).max(dim=1).values
+        max_idx_flat = softmaxes.view(P, -1).max(dim=1).indices
+        max_h = (max_idx_flat // Wf).long()
+        max_w = (max_idx_flat % Wf).long()
 
-                if found_max > seen_max[p]:
-                    seen_max[p] = found_max
+        for p in range(P):
+            c_weight = torch.max(classification_weights[:, p])
+            if c_weight <= 0:
+                continue
 
-                if found_max > 0.5:
-                    img_to_open = imgs[images_seen_before + idx_to_select]
-                    mask_to_open = masks[images_seen_before + idx_to_select]
+            found_max = float(max_vals[p].item())
+            seen_max[p] = max(seen_max[p], found_max)
 
-                    if isinstance(img_to_open, tuple) or isinstance(img_to_open,
-                                                                    list):  # dataset contains tuples of (img,label)
-                        img_to_open = img_to_open[0]
+            if found_max <= 0.5:
+                continue
 
-                    if isinstance(mask_to_open, tuple) or isinstance(mask_to_open,
-                                                                     list):  # dataset contains tuples of (img,label)
-                        mask_to_open = mask_to_open[0]
+            h_idx = int(max_h[p].item())
+            w_idx = int(max_w[p].item())
 
-                    image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
-                    mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open).convert("RGB"))
-                    msk_tensor = transforms.ToTensor()(mask)
-                    bool_mask = create_boolean_mask(msk_tensor)
-                    img_tensor = transforms.ToTensor()(image).unsqueeze_(0)  # shape (1, 3, h, w)
-                    h_coor_min, h_coor_max, w_coor_min, w_coor_max = get_img_coordinates(img_size, softmaxes.shape,
-                                                                                         patchsize, skip, h_idx, w_idx)
-                    msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                    num_white_pixels = torch.sum(msk_tensor_patch).item()
-                    if num_white_pixels >= 100:
-                        fg_patches_per_prototype[p].append(True)
-                    else:
-                        fg_patches_per_prototype[p].append(False)
+            img_to_open = imgs[images_seen_before]
+            mask_to_open = masks[images_seen_before]
+            if isinstance(img_to_open, (tuple, list)):
+                img_to_open = img_to_open[0]
+            if isinstance(mask_to_open, (tuple, list)):
+                mask_to_open = mask_to_open[0]
+
+            image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
+            mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open).convert("RGB"))
+            bool_mask = create_boolean_mask(transforms.ToTensor()(mask))
+
+            h0, h1, w0, w1 = get_img_coordinates(img_size, (P, Hf, Wf), patchsize, skip, h_idx, w_idx)
+            msk_patch = bool_mask[h0:h1, w0:w1]
+            num_white_pixels = int(torch.sum(msk_patch).item())
+            fg_patches_per_prototype[p].append(num_white_pixels >= 100)
 
         images_seen_before += len(ys)
-    fractions = dict()
 
-    for k in fg_patches_per_prototype.keys():
-        bool_list = fg_patches_per_prototype[k]
-        true_count = sum(bool_list)  # Count the number of True values
-        total_count = len(bool_list)  # Count the total number of items
-        fraction = true_count / total_count if total_count > 0 else 0  # Calculate fraction
-        fractions[k] = fraction
+    fractions = {}
+    for p, bool_list in fg_patches_per_prototype.items():
+        true_count = sum(bool_list)
+        total_count = len(bool_list)
+        fractions[p] = true_count / total_count if total_count > 0 else 0.0
     return fractions
 
 
 def visualize(net, projectloader, num_classes, device, foldername, args: argparse.Namespace):
-    print("Visualizing prototypes...", flush=True)
-    dir = os.path.join(args.log_dir, foldername)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    """
+    Single-scale visualization of prototypes.
+    Saves patch rectangles + heatmap overlays for prototypes.
+    """
+    print("Visualizing prototypes (single-scale)...", flush=True)
+    out_dir = os.path.join(args.log_dir, foldername)
+    os.makedirs(out_dir, exist_ok=True)
 
-    near_imgs_dirs = dict()
-    seen_max = dict()
-    saved = dict()
-    saved_ys = dict()
-    tensors_per_prototype = dict()
+    P = net.module._num_prototypes
+    seen_max = {p: 0.0 for p in range(P)}
+    saved = {p: 0 for p in range(P)}
+    tensors_per_prototype = {p: [] for p in range(P)}
     abstainedimgs = set()
     notabstainedimgs = set()
-    
-    for p in range(net.module._num_prototypes):
-        near_imgs_dir = os.path.join(dir, str(p))
-        near_imgs_dirs[p]=near_imgs_dir
-        seen_max[p]=0.
-        saved[p]=0
-        saved_ys[p]=[]
-        tensors_per_prototype[p]=[]
 
     imgs = projectloader.dataset.imgs
-    masks = []
-    for i in imgs:
-        mask_path, target = i
-        directory, filename = os.path.split(mask_path)
-        name, extension = os.path.splitext(filename)
-        new_maskname = 'mask_' + name + extension
-        new_mask_path = os.path.join(directory, new_maskname)
-        masks.append((new_mask_path, target))
-    
-    # skip some images for visualisation to speed up the process
-    if len(imgs)/num_classes <10:
-        skip_img=10
-    elif len(imgs)/num_classes < 50:
-        skip_img=5
+    masks = build_masks_list_from_imgs(imgs)
+
+    # skipping policy (unchanged)
+    if len(imgs) / num_classes < 10:
+        skip_img = 10
+    elif len(imgs) / num_classes < 50:
+        skip_img = 5
     else:
         skip_img = 2
-    print("Every", skip_img, "is skipped in order to speed up the visualisation process", flush=True)
+    print("Every", skip_img, "is skipped to speed up visualization", flush=True)
 
-    # Make sure the model is in evaluation mode
     net.eval()
     classification_weights = net.module._classification.weight
-    # Show progress on progress bar
-    img_iter = tqdm(enumerate(projectloader),
-                    total=len(projectloader),
-                    mininterval=100.,
-                    desc='Visualizing',
-                    ncols=0)
 
-    # Iterate through the data
+    img_iter = tqdm(
+        enumerate(projectloader),
+        total=len(projectloader),
+        mininterval=100.0,
+        desc="Visualizing",
+        ncols=0,
+    )
+
     images_seen_before = 0
-    for i, (xs, xs_ds, m, m_ds, ys) in img_iter: #shuffle is false so should lead to same order as in imgs
+    for i, (xs, xs_ds, m, m_ds, ys) in img_iter:
         if i % skip_img == 0:
-            images_seen_before+=xs.shape[0]
+            images_seen_before += xs.shape[0]
             continue
-        
-        xs, xs_ds, m, m_ds, ys = xs.to(device), xs_ds.to(device), m.to(device), m_ds.to(device), ys.to(device)
-        # Use the model to classify this batch of input data
-        with torch.no_grad():
-            proto_features, proto_features_ds, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
 
-        for p in range(0, net.module._num_prototypes):
-            if p >= net.module._num_prototypes // 2:
-                img_size = args.image_size_ds
-                softmaxes = proto_features_ds
-                pidx = p - net.module._num_prototypes // 2
+        xs = xs.to(device)
+        ys = ys.to(device)
+
+        proto_features, _, clamped_pooled, out = net(xs=xs, xs_ds=xs_ds, inference=True)
+        softmaxes = proto_features.squeeze(0)  # [P,Hf,Wf]
+        Hf, Wf = softmaxes.shape[1], softmaxes.shape[2]
+        img_size = args.image_size
+
+        patchsize, skip = get_patch_size_single(args, (Hf, Wf), img_size)
+
+        # peaks per prototype
+        max_vals = softmaxes.view(P, -1).max(dim=1).values
+        max_idx_flat = softmaxes.view(P, -1).max(dim=1).indices
+        max_h = (max_idx_flat // Wf).long()
+        max_w = (max_idx_flat % Wf).long()
+
+        for p in range(P):
+            c_weight = torch.max(classification_weights[:, p])
+            if c_weight <= 0:
+                continue
+
+            found_max = float(max_vals[p].item())
+            seen_max[p] = max(seen_max[p], found_max)
+
+            imgname = imgs[images_seen_before]
+            if out.max().item() < 1e-8:
+                abstainedimgs.add(imgname)
             else:
-                img_size = args.image_size
-                softmaxes = proto_features
-                pidx = p
+                notabstainedimgs.add(imgname)
 
-            max_per_prototype, max_idx_per_prototype = torch.max(softmaxes, dim=0)
-            # In PyTorch, images are represented as [channels, height, width]
-            max_per_prototype_h, max_idx_per_prototype_h = torch.max(max_per_prototype, dim=1)
-            max_per_prototype_w, max_idx_per_prototype_w = torch.max(max_per_prototype_h, dim=1)
+            if found_max <= 0.5:
+                continue
 
-            c_weight = torch.max(classification_weights[:,p]) #ignore prototypes that are not relevant to any class
-            if c_weight>0:
-                h_idx = max_idx_per_prototype_h[pidx, max_idx_per_prototype_w[pidx]]
-                w_idx = max_idx_per_prototype_w[pidx]
-                idx_to_select = max_idx_per_prototype[pidx,h_idx, w_idx].item()
-                found_max = max_per_prototype[pidx,h_idx, w_idx].item()
+            h_idx = int(max_h[p].item())
+            w_idx = int(max_w[p].item())
 
-                imgname = imgs[images_seen_before+idx_to_select]
-                if out.max() < 1e-8:
-                    abstainedimgs.add(imgname)
-                else:
-                    notabstainedimgs.add(imgname)
-                
-                if found_max > seen_max[p]:
-                    seen_max[p]=found_max
-               
-                if found_max > 0.5:
-                    img_to_open = imgs[images_seen_before+idx_to_select]
-                    mask_to_open = masks[images_seen_before+idx_to_select]
+            img_to_open = imgs[images_seen_before]
+            mask_to_open = masks[images_seen_before]
 
-                    if isinstance(img_to_open, tuple) or isinstance(img_to_open, list): #dataset contains tuples of (img,label)
-                        imglabel = img_to_open[1]
-                        img_to_open = img_to_open[0]
+            imglabel = None
+            if isinstance(img_to_open, (tuple, list)):
+                imglabel = img_to_open[1]
+                img_to_open = img_to_open[0]
+            if isinstance(mask_to_open, (tuple, list)):
+                mask_to_open = mask_to_open[0]
 
-                    if isinstance(mask_to_open, tuple) or isinstance(mask_to_open, list):  # dataset contains tuples of (img,label)
-                        mask_to_open = mask_to_open[0]
+            image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
+            mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open).convert("RGB"))
 
-                    image = transforms.Resize(size=(img_size, img_size))(Image.open(img_to_open).convert("RGB"))
-                    mask = transforms.Resize(size=(img_size, img_size))(Image.open(mask_to_open).convert("RGB"))
-                    msk_tensor = transforms.ToTensor()(mask)
-                    bool_mask = create_boolean_mask(msk_tensor)
-                    img_tensor = transforms.ToTensor()(image).unsqueeze(0)  # (1, 3, H, W)
+            bool_mask = create_boolean_mask(transforms.ToTensor()(mask))
+            img_tensor = transforms.ToTensor()(image).unsqueeze(0)  # (1,3,H,W)
 
-                    # --- sanity / peak location in feature-map space ---
-                    hm = softmaxes[0, pidx]  # [Hf, Wf]
-                    peak = torch.argmax(hm)
-                    py = int(peak // hm.shape[1])  # row (h)
-                    px = int(peak % hm.shape[1])  # col (w)
+            h0, h1, w0, w1 = get_img_coordinates(img_size, (P, Hf, Wf), patchsize, skip, h_idx, w_idx)
+            img_patch = img_tensor[0, :, h0:h1, w0:w1]
+            msk_patch = bool_mask[h0:h1, w0:w1]
+            num_white_pixels = int(torch.sum(msk_patch).item())
 
-                    print(
-                        f"Prototype {pidx}: peak (h,w)=({py},{px}), used (h_idx,w_idx)=({h_idx},{w_idx})"
-                    )
+            saved[p] += 1
+            tensors_per_prototype[p].append((img_patch, found_max))
 
-                    Hf, Wf = hm.shape
+            # heatmap overlay on full image
+            hm = softmaxes[p].detach().cpu().numpy()  # [Hf,Wf]
+            hm_img = Image.fromarray(np.uint8(255 * hm)).resize((img_size, img_size), Image.BICUBIC)
+            hm_np = np.array(hm_img).astype(np.float32) / 255.0
 
-                    # IMPORTANT: use the *actual* image tensor size that you're slicing
-                    Himg, Wimg = img_tensor.shape[-2], img_tensor.shape[-1]
+            heatmap = cv2.applyColorMap(np.uint8(255 * hm_np), cv2.COLORMAP_JET)
+            heatmap = np.float32(heatmap) / 255.0
+            heatmap = heatmap[..., ::-1]  # BGR->RGB
 
-                    # ViT patch size (set this correctly for your ViT: 14 for ViT-L/14, 16 for ViT-B/16, etc.)
-                    vit_patch = 14  # <-- change to your model's patch size
+            base = img_tensor.squeeze(0).detach().cpu().numpy().transpose(1, 2, 0)
+            heatmap_img = (0.2 * heatmap + 0.6 * base).clip(0, 1)
 
-                    # sanity: feature map grid must match image/patch geometry
-                    assert Himg % vit_patch == 0 and Wimg % vit_patch == 0, (Himg, Wimg, vit_patch)
-                    assert Hf == Himg // vit_patch and Wf == Wimg // vit_patch, (
-                    Hf, Wf, Himg // vit_patch, Wimg // vit_patch)
+            boundary_color = "red" if num_white_pixels >= 100 else "yellow"
 
-                    h_coor_min = py * vit_patch
-                    h_coor_max = (py + 1) * vit_patch
-                    w_coor_min = px * vit_patch
-                    w_coor_max = (px + 1) * vit_patch
+            save_path = os.path.join(out_dir, f"prototype_{p}")
+            os.makedirs(save_path, exist_ok=True)
 
-                    img_tensor_patch = img_tensor[0, :, h_coor_min:h_coor_max, w_coor_min:w_coor_max]
-                    msk_tensor_patch = bool_mask[h_coor_min:h_coor_max, w_coor_min:w_coor_max]
+            # rectangle overlay on masked image
+            msk_tensor = transforms.ToTensor()(mask)
+            img_tensor_u8 = (transforms.ToTensor()(image) * 255).int()
+            output = (img_tensor_u8.numpy() * (0.6 * msk_tensor.numpy() + 0.4)).astype(np.uint8)
+            output = Image.fromarray(np.squeeze(output).transpose(1, 2, 0))
+            draw = D.Draw(output)
+            draw.rectangle([(w0, h0), (w1, h1)], outline=boundary_color, width=2)
 
-                    saved[p]+=1
-                    tensors_per_prototype[p].append((img_tensor_patch, found_max))
+            tag = f"p{p}_{imglabel}_{round(found_max,2)}_{os.path.basename(img_to_open).split('.')[0]}"
+            output.save(os.path.join(save_path, f"{tag}_rect.png"))
+            plt.imsave(os.path.join(save_path, f"{tag}_heat.png"), heatmap_img, vmin=0.0, vmax=1.0)
 
-                    softmaxes_resized = transforms.ToPILImage()(softmaxes[0, pidx, :, :])
-                    softmaxes_resized = softmaxes_resized.resize((img_size, img_size), Image.BICUBIC)
-                    softmaxes_np = (transforms.ToTensor()(softmaxes_resized)).squeeze().numpy()
+        images_seen_before += len(ys)
 
-                    heatmap = cv2.applyColorMap(np.uint8(255 * softmaxes_np), cv2.COLORMAP_JET)
-                    heatmap = np.float32(heatmap) / 255
-                    heatmap = heatmap[..., ::-1]  # OpenCV's BGR to RGB
-                    heatmap_img = 0.2 * np.float32(heatmap) + 0.6 * np.float32(
-                        img_tensor.squeeze().numpy().transpose(1, 2, 0))
+    print("num images abstained:", len(abstainedimgs), flush=True)
+    print("num images not abstained:", len(notabstainedimgs), flush=True)
 
-                    Hf, Wf = hm.shape
-                    Himg, Wimg = img_tensor.shape[-2], img_tensor.shape[-1]  # should be img_size,img_size
-
-                    cell_h = Himg / Hf
-                    cell_w = Wimg / Wf
-                    print("img_size:", img_size, "hm:", (Hf, Wf), "cell(px):", (cell_h, cell_w))
-                    print("box:", h_coor_min, h_coor_max, w_coor_min, w_coor_max)
-
-                    print('Prototype ', p, torch.sum(msk_tensor_patch).item())
-                    num_white_pixels = torch.sum(msk_tensor_patch).item()
-                    if num_white_pixels >= 100:
-                        boundary_color = "red"
-                    else:
-                        boundary_color = "yellow"
-
-                    save_path = os.path.join(dir, "prototype_%s")%str(p)
-                    if not os.path.exists(save_path):
-                        os.makedirs(save_path)
-
-                    msk_tensor = transforms.ToTensor()(mask)
-                    img_tensor = (transforms.ToTensor()(image) * 255).int()
-                    output = (img_tensor.numpy() * (0.6 * msk_tensor.numpy() + 0.4)).astype(np.uint8)
-                    output = Image.fromarray(np.squeeze(output).transpose(1, 2, 0))
-                    draw = D.Draw(output)
-                    draw.rectangle([(w_coor_min, h_coor_min), (w_coor_max, h_coor_max)], outline=boundary_color, width=2)
-                    output.save(os.path.join(save_path, 'p%s_%s_%s_%s_rect.png'%(str(p),str(imglabel),str(round(found_max, 2)),str(img_to_open.split('/')[-1].split('.jpg')[0]))))
-
-                    plt.imsave(fname=os.path.join(save_path, 'p%s_%s_%s_%s_heat.png' % (str(p), str(imglabel),
-                                                                                    str(round(found_max, 2)),
-                                                                                    str(img_to_open.split('/')[
-                                                                                            -1].split('.jpg')[0]))),
-                               arr=heatmap_img, vmin=0.0, vmax=1.0)
-
-        images_seen_before+=len(ys)
-
-    print("num images abstained: ", len(abstainedimgs), flush=True)
-    print("num images not abstained: ", len(notabstainedimgs), flush=True)
-    for p in range(net.module._num_prototypes):
-        if saved[p]>0:
+    # grids per prototype
+    for p in range(P):
+        if saved[p] > 0:
             try:
-                sorted_by_second = sorted(tensors_per_prototype[p], key=lambda tup: tup[1], reverse=True)
-                sorted_ps = [i[0] for i in sorted_by_second]
-                grid = torchvision.utils.make_grid(sorted_ps, nrow=16, padding=1)
-                torchvision.utils.save_image(grid,os.path.join(dir,"grid_%s.png"%(str(p))))
+                sorted_by_score = sorted(tensors_per_prototype[p], key=lambda tup: tup[1], reverse=True)
+                patches = [t[0] for t in sorted_by_score]
+                grid = torchvision.utils.make_grid(patches, nrow=16, padding=1)
+                torchvision.utils.save_image(grid, os.path.join(out_dir, f"grid_{p}.png"))
             except RuntimeError:
                 pass
 
+
 # convert latent location to coordinates of image patch
 def get_img_coordinates(img_size, softmaxes_shape, patchsize, skip, h_idx, w_idx):
-    # in case latent output size is 26x26. For convnext with smaller strides. 
-    if softmaxes_shape[1] == 26 and softmaxes_shape[2] == 26:
-        #Since the outer latent patches have a smaller receptive field, skip size is set to 4 for the first and last patch. 8 for rest.
-        h_coor_min = max(0,(h_idx-1)*skip+4)
-        if h_idx < softmaxes_shape[-1]-1:
-            h_coor_max = h_coor_min + patchsize
-        else:
-            h_coor_min -= 4
-            h_coor_max = h_coor_min + patchsize
-        w_coor_min = max(0,(w_idx-1)*skip+4)
-        if w_idx < softmaxes_shape[-1]-1:
-            w_coor_max = w_coor_min + patchsize
-        else:
-            w_coor_min -= 4
-            w_coor_max = w_coor_min + patchsize
-    else:
-        h_coor_min = h_idx*skip
-        h_coor_max = min(img_size, h_idx*skip+patchsize)
-        w_coor_min = w_idx*skip
-        w_coor_max = min(img_size, w_idx*skip+patchsize)                                    
-    
-    if h_idx == softmaxes_shape[1]-1:
+    """
+    softmaxes_shape is expected to be (P,Hf,Wf) or similar
+    """
+    Hf = softmaxes_shape[1]
+    Wf = softmaxes_shape[2]
+
+    # Standard grid mapping: each cell is "skip" pixels, patch is patchsize
+    h_coor_min = h_idx * skip
+    h_coor_max = min(img_size, h_idx * skip + patchsize)
+    w_coor_min = w_idx * skip
+    w_coor_max = min(img_size, w_idx * skip + patchsize)
+
+    # Clamp last cell to image boundary
+    if h_idx == Hf - 1:
         h_coor_max = img_size
-    if w_idx == softmaxes_shape[2] -1:
+    if w_idx == Wf - 1:
         w_coor_max = img_size
     if h_coor_max == img_size:
-        h_coor_min = img_size-patchsize
+        h_coor_min = img_size - patchsize
     if w_coor_max == img_size:
-        w_coor_min = img_size-patchsize
+        w_coor_min = img_size - patchsize
 
     return h_coor_min, h_coor_max, w_coor_min, w_coor_max
-    

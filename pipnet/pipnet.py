@@ -30,28 +30,21 @@ class PIPNet(nn.Module):
         self._classification = classification_layer
         self._multiplier = classification_layer.normalization_multiplier
 
-    def forward(self, xs, xs_ds, inference=False):
+    def forward(self, xs, xs_ds=None, inference=False):
+        # ---- single scale only ----
         features = self._net(xs)
-        features_ds = self._net(xs_ds)
-
         proto_features = self._add_on(features)
-        proto_features_ds = self._add_on(features_ds)
-
         proto_features = F.softmax(proto_features, dim=1)
-        proto_features_ds = F.softmax(proto_features_ds, dim=1)
 
-        pooled_big = self._pool(proto_features)  # [B, D]
-        pooled_ds = self._pool(proto_features_ds)
-        # union of two pools (2D distinct prototypes)
-        pooled = torch.cat([pooled_big, pooled_ds], dim=1)  # [B, 2D]
+        pooled = self._pool(proto_features)  # [B, D]
 
         if inference:
             clamped_pooled = torch.where(pooled < 0.1, 0., pooled)
             out = self._classification(clamped_pooled)
-            return proto_features, proto_features_ds, clamped_pooled, out
+            return proto_features, None, clamped_pooled, out
         else:
             out = self._classification(pooled)
-            return proto_features, proto_features_ds, pooled, out
+            return proto_features, None, pooled, out
 
 base_architecture_to_features = {'resnet18': resnet18_features,
                                  'resnet34': resnet34_features,
