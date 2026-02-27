@@ -121,52 +121,24 @@ def get_network(num_classes: int, args: argparse.Namespace):
         else:
             raise Exception('other base architecture NOT implemented')
 
-    # ---- prototypes: ALWAYS 2*D ----
+    # D is the feature dimension (either backbone channels or args.num_features)
     if args.num_features == 0:
-        # D = backbone output channels
         D = first_add_on_layer_in_channels
-        num_prototypes = 2 * D
-        print("Number of prototypes:", num_prototypes, flush=True)
-
-        # IMPORTANT: produce 2D prototype maps directly
-        add_on_layers = nn.Conv2d(
-            in_channels=D,
-            out_channels=num_prototypes,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            bias=True
-        )
-
     else:
-        # D = args.num_features (your chosen bottleneck size)
         D = args.num_features
-        num_prototypes = 2 * D
-        print(
-            "Number of prototypes set from", first_add_on_layer_in_channels,
-            "to", num_prototypes, ". Extra 1x1 conv layer added.",
-            flush=True
-        )
 
-        # backbone channels -> D -> 2D (so prototypes are 2D)
-        add_on_layers = nn.Sequential(
-            nn.Conv2d(
-                in_channels=first_add_on_layer_in_channels,
-                out_channels=D,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                bias=True
-            ),
-            nn.Conv2d(
-                in_channels=D,
-                out_channels=num_prototypes,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                bias=True
-            ),
-        )
+    num_prototypes = 2 * D
+    print("Number of prototypes:", num_prototypes, flush=True)
+
+    # SINGLE 1x1 CONV: backbone -> 2D prototypes
+    add_on_layers = nn.Conv2d(
+        in_channels=first_add_on_layer_in_channels,
+        out_channels=num_prototypes,
+        kernel_size=1,
+        stride=1,
+        padding=0,
+        bias=True
+    )
 
     pool_layer = nn.Sequential(
         nn.AdaptiveMaxPool2d(output_size=(1,1)),
