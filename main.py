@@ -151,7 +151,7 @@ def run_pipnet(args=None):
         wshape = proto_features.shape[-1]
         # wshape_ds = proto_features_ds.shape[-1]
         args.wshape = wshape
-        args.wshape_ds = wshape_ds  # needed for calculating image patch size
+        #args.wshape_ds = wshape_ds  # needed for calculating image patch size
         print("Output shape: ", proto_features.shape, flush=True)
         print("Downsampled output shape: ", proto_features_ds.shape, flush=True)
 
