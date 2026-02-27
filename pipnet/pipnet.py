@@ -30,15 +30,14 @@ class PIPNet(nn.Module):
         self._classification = classification_layer
         self._multiplier = classification_layer.normalization_multiplier
 
-    def forward(self, xs, inference: bool = False):
+    def forward(self, xs, xs_ds=None, inference: bool = False):
+        # xs_ds is ignored (kept only for backward compatibility with old training code)
+
         features = self._net(xs)
-
-        # now add_on outputs [B, 2D, h, w]
         proto_features = self._add_on(features)
-        proto_features = F.softmax(proto_features, dim=1)
+        proto_features = F.softmax(proto_features, dim=1)  # [B, 2D, h, w]
 
-        # pooled is already [B, 2D]
-        pooled = self._pool(proto_features)
+        pooled = self._pool(proto_features)  # [B, 2D]
 
         if inference:
             pooled = torch.where(pooled < 0.1, 0.0, pooled)
