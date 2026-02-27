@@ -30,21 +30,21 @@ class PIPNet(nn.Module):
         self._classification = classification_layer
         self._multiplier = classification_layer.normalization_multiplier
 
-    def forward(self, xs, xs_ds=None, inference=False):
-        # ---- single scale only ----
+    def forward(self, xs, inference: bool = False):
         features = self._net(xs)
+
+        # now add_on outputs [B, 2D, h, w]
         proto_features = self._add_on(features)
         proto_features = F.softmax(proto_features, dim=1)
 
-        pooled = self._pool(proto_features)  # [B, D]
+        # pooled is already [B, 2D]
+        pooled = self._pool(proto_features)
 
         if inference:
-            clamped_pooled = torch.where(pooled < 0.1, 0., pooled)
-            out = self._classification(clamped_pooled)
-            return proto_features, None, clamped_pooled, out
-        else:
-            out = self._classification(pooled)
-            return proto_features, None, pooled, out
+            pooled = torch.where(pooled < 0.1, 0.0, pooled)
+
+        out = self._classification(pooled)
+        return proto_features, None, pooled, out
 
 base_architecture_to_features = {'resnet18': resnet18_features,
                                  'resnet34': resnet34_features,
@@ -76,85 +76,103 @@ class NonNegLinear(nn.Module):
         return F.linear(input,torch.relu(self.weight), self.bias)
 
 
-
 def get_network(num_classes: int, args: argparse.Namespace):
     embed_sizes={"dinov2_vits14": 384,
         "dinov2_vitb14": 768,
         "dinov2_vitl14": 1024,
         "dinov2_vitg14": 1536}
     modelname = "dinov2_vitb14"
-    # ---- DINOv2 branch ----
+
+    # ---- backbone selection ----
     if args.net.startswith("dinov2_"):
-        # Load DINOv2 backbone from torch hub
         vit = torch.hub.load("facebookresearch/dinov2", args.net)
-        # load finetuned weights
         pretrained = torch.load(args.vit_path, map_location=torch.device('cpu'))
-        print(vit.pos_embed.shape)
-        # make correct state dict for loading
+
         new_state_dict = {}
         for key, value in pretrained['teacher'].items():
             if 'dino_head' in key or "ibot_head" in key:
-                pass
-            else:
-                new_key = key.replace('backbone.', '')
-                new_state_dict[new_key] = value
+                continue
+            new_key = key.replace('backbone.', '')
+            new_state_dict[new_key] = value
 
-        pos_embed = torch.nn.Parameter(torch.zeros(1, 257, embed_sizes[modelname]))
-        vit.pos_embed = pos_embed
-
+        vit.pos_embed = torch.nn.Parameter(torch.zeros(1, 257, embed_sizes[modelname]))
         vit.load_state_dict(new_state_dict, strict=True)
 
         for p in vit.parameters():
             p.requires_grad = False
 
-        # Unfreeze last N blocks
-        N = 4  # e.g. 2
+        N = 4
         for blk in vit.blocks[-N:]:
             for p in blk.parameters():
                 p.requires_grad = True
-
-        # Optionally unfreeze final norm
         for p in vit.norm.parameters():
             p.requires_grad = True
 
-        # Wrap to return a conv-like feature map
         features = DinoV2Features(vit, which="x_norm_patchtokens")
-        features_name = args.net.upper()
-
         first_add_on_layer_in_channels = features.out_channels
+
     else:
         features = base_architecture_to_features[args.net](pretrained=not args.disable_pretrained)
-        features_name = str(features).upper()
-        if 'next' in args.net:
-            features_name = str(args.net).upper()
+        features_name = str(args.net).upper() if 'next' in args.net else str(features).upper()
+
         if features_name.startswith('RES') or features_name.startswith('CONVNEXT'):
             first_add_on_layer_in_channels = \
                 [i for i in features.modules() if isinstance(i, nn.Conv2d)][-1].out_channels
         else:
             raise Exception('other base architecture NOT implemented')
 
+    # ---- prototypes: ALWAYS 2*D ----
     if args.num_features == 0:
-        num_prototypes = 2 * first_add_on_layer_in_channels
-        print("Number of prototypes: ", num_prototypes, flush=True)
-        add_on_layers = nn.Identity() #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1jghlf
+        # D = backbone output channels
+        D = first_add_on_layer_in_channels
+        num_prototypes = 2 * D
+        print("Number of prototypes:", num_prototypes, flush=True)
+
+        # IMPORTANT: produce 2D prototype maps directly
+        add_on_layers = nn.Conv2d(
+            in_channels=D,
+            out_channels=num_prototypes,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=True
+        )
+
     else:
-        num_prototypes = 2 * args.num_features
-        print("Number of prototypes set from", first_add_on_layer_in_channels, "to", num_prototypes,". Extra 1x1 conv layer added. Not recommended.", flush=True)
+        # D = args.num_features (your chosen bottleneck size)
+        D = args.num_features
+        num_prototypes = 2 * D
+        print(
+            "Number of prototypes set from", first_add_on_layer_in_channels,
+            "to", num_prototypes, ". Extra 1x1 conv layer added.",
+            flush=True
+        )
+
+        # backbone channels -> D -> 2D (so prototypes are 2D)
         add_on_layers = nn.Sequential(
-            nn.Conv2d(in_channels=first_add_on_layer_in_channels, out_channels=args.num_features, kernel_size=1, stride = 1, padding=0, bias=True)#,
-            #nn.Softmax(dim=1), #softmax over every prototype for each patch, such that for every location in image, sum over prototypes is 1
-    )
+            nn.Conv2d(
+                in_channels=first_add_on_layer_in_channels,
+                out_channels=D,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=True
+            ),
+            nn.Conv2d(
+                in_channels=D,
+                out_channels=num_prototypes,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=True
+            ),
+        )
+
     pool_layer = nn.Sequential(
-                nn.AdaptiveMaxPool2d(output_size=(1,1)), #outputs (bs, ps,1,1)
-                nn.Flatten() #outputs (bs, ps)
-                ) 
-    
-    if args.bias:
-        classification_layer = NonNegLinear(num_prototypes, num_classes, bias=True)
-    else:
-        classification_layer = NonNegLinear(num_prototypes, num_classes, bias=False)
-        
+        nn.AdaptiveMaxPool2d(output_size=(1,1)),
+        nn.Flatten()
+    )
+
+    classification_layer = NonNegLinear(num_prototypes, num_classes, bias=bool(args.bias))
     return features, add_on_layers, pool_layer, classification_layer, num_prototypes
-
-
     
