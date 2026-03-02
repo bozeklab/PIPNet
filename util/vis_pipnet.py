@@ -370,9 +370,9 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
 
     images_seen_before = 0
     for i, (xs, xs_ds, m, m_ds, ys) in img_iter:
-        if i % skip_img == 0:
-            images_seen_before += xs.shape[0]
-            continue
+        #if i % skip_img == 0:
+        #    images_seen_before += xs.shape[0]
+        #    continue
 
         xs = xs.to(device)
         ys = ys.to(device)
