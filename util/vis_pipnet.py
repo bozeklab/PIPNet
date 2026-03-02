@@ -349,13 +349,13 @@ def visualize(net, projectloader, num_classes, device, foldername, args: argpars
     masks = build_masks_list_from_imgs(imgs)
 
     # skipping policy (unchanged)
-    if len(imgs) / num_classes < 10:
-        skip_img = 10
-    elif len(imgs) / num_classes < 50:
-        skip_img = 5
-    else:
-        skip_img = 2
-    print("Every", skip_img, "is skipped to speed up visualization", flush=True)
+    # if len(imgs) / num_classes < 10:
+    #     skip_img = 10
+    # elif len(imgs) / num_classes < 50:
+    #     skip_img = 5
+    # else:
+    #     skip_img = 2
+    # print("Every", skip_img, "is skipped to speed up visualization", flush=True)
 
     net.eval()
     classification_weights = net.module._classification.weight
